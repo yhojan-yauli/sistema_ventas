@@ -89,6 +89,47 @@ import { IconComponent } from '../../shared/icon.component';
               </button>
             </form>
           </section>
+
+          <section class="config-card">
+            <div class="config-card-head">
+              <span class="avatar soft"><app-icon name="mail" [size]="18" /></span>
+              <div>
+                <h2>Correo (SMTP)</h2>
+                <small>Cuenta desde la que se envían los comprobantes por correo</small>
+              </div>
+            </div>
+            <form [formGroup]="smtpForm" novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label class="label">Servidor SMTP</label>
+                  <input class="input" formControlName="smtpHost" placeholder="smtp.gmail.com" />
+                </div>
+                <div class="field">
+                  <label class="label">Puerto</label>
+                  <input class="input" type="number" formControlName="smtpPort" placeholder="587" />
+                </div>
+                <div class="field full">
+                  <label class="label">Usuario</label>
+                  <input class="input" type="email" formControlName="smtpUsername" placeholder="tucorreo@gmail.com" />
+                </div>
+                <div class="field full">
+                  <label class="label">Contraseña de aplicación</label>
+                  <input class="input" type="password" formControlName="smtpPassword" placeholder="Contraseña de aplicación de Gmail" />
+                </div>
+              </div>
+              <div class="mt-12">
+                <p class="hint">Para Gmail: activa la verificación en 2 pasos y genera una contraseña de aplicación de 16 caracteres.</p>
+              </div>
+              <div class="btn-row mt-12">
+                <button class="btn btn-outline" [disabled]="testing() || saving()" (click)="probar()">
+                  @if (testing()) { <span class="spinner"></span> Enviando… } @else { <app-icon name="mail" [size]="16" /> Probar envío }
+                </button>
+                <button class="btn btn-primary" [disabled]="testing() || saving()" (click)="save()">
+                  @if (saving()) { <span class="spinner"></span> Guardando… } @else { <app-icon name="save" [size]="16" /> Guardar correo }
+                </button>
+              </div>
+            </form>
+          </section>
         </div>
       }
     </div>
@@ -144,6 +185,18 @@ import { IconComponent } from '../../shared/icon.component';
         color: var(--text-faint);
         font-size: 12px;
       }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-row .btn {
+        flex: 1;
+      }
+      .hint {
+        color: var(--text-faint);
+        font-size: 12px;
+        line-height: 1.45;
+      }
       .mt-12 {
         margin-top: 12px;
       }
@@ -158,6 +211,7 @@ export class ConfiguracionComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly testing = signal(false);
 
   readonly impuestosForm = this.fb.nonNullable.group({
     igvPorcentaje: [18, [Validators.required, Validators.min(0), Validators.max(100)]],
@@ -170,6 +224,13 @@ export class ConfiguracionComponent implements OnInit {
     direccion: [''],
     telefono: [''],
     email: [''],
+  });
+
+  readonly smtpForm = this.fb.nonNullable.group({
+    smtpHost: ['smtp.gmail.com'],
+    smtpPort: ['587'],
+    smtpUsername: [''],
+    smtpPassword: [''],
   });
 
   ngOnInit() {
@@ -185,6 +246,12 @@ export class ConfiguracionComponent implements OnInit {
           telefono: c.telefono,
           email: c.email,
         });
+        this.smtpForm.patchValue({
+          smtpHost: c.smtpHost || 'smtp.gmail.com',
+          smtpPort: c.smtpPort || '587',
+          smtpUsername: c.smtpUsername || '',
+          smtpPassword: c.smtpPassword || '',
+        });
         this.loading.set(false);
       });
   }
@@ -196,6 +263,7 @@ export class ConfiguracionComponent implements OnInit {
     }
     const i = this.impuestosForm.getRawValue();
     const e = this.empresaForm.getRawValue();
+    const s = this.smtpForm.getRawValue();
     this.saving.set(true);
     this.api
       .actualizarConfiguracion({
@@ -206,6 +274,10 @@ export class ConfiguracionComponent implements OnInit {
         direccion: e.direccion || undefined,
         telefono: e.telefono || undefined,
         email: e.email || undefined,
+        smtpHost: s.smtpHost || undefined,
+        smtpPort: s.smtpPort || undefined,
+        smtpUsername: s.smtpUsername || undefined,
+        smtpPassword: s.smtpPassword || undefined,
       })
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe({
@@ -215,6 +287,33 @@ export class ConfiguracionComponent implements OnInit {
         },
         error: (e) => {
           this.saving.set(false);
+          this.toast.error(errorMessage(e));
+        },
+      });
+  }
+
+  probar() {
+    const s = this.smtpForm.getRawValue();
+    const para = (s.smtpUsername || '').trim();
+    if (!para) {
+      this.toast.error('Ingresa tu correo en Usuario antes de probar');
+      return;
+    }
+    this.testing.set(true);
+    this.api
+      .enviarCorreo({
+        para,
+        asunto: 'Prueba SMTP',
+        cuerpo: 'Este es un correo de prueba desde el sistema de ventas.\nSi lo ves en tu bandeja, la configuración SMTP es correcta.',
+      })
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe({
+        next: () => {
+          this.testing.set(false);
+          this.toast.success(`Correo de prueba enviado a ${para}`);
+        },
+        error: (e) => {
+          this.testing.set(false);
           this.toast.error(errorMessage(e));
         },
       });

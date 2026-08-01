@@ -1,16 +1,17 @@
 import { Component, DestroyRef, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { boletaTexto, mailLink, printBoleta, waLink } from '../core/boleta';
+import { printBoleta } from '../core/boleta';
 import { ConfiguracionResponse, VentaResponse } from '../core/models';
 import { ApiService } from '../core/services/api.service';
 import { dateTime, money, tipoComprobanteLabel, tipoPagoLabel } from '../core/utils';
+import { EnviarCorreoModalComponent } from './enviar-correo-modal.component';
 import { IconComponent } from './icon.component';
 import { ModalComponent, ModalFooterDirective } from './modal.component';
 
 @Component({
   selector: 'app-comprobante-modal',
   standalone: true,
-  imports: [ModalComponent, ModalFooterDirective, IconComponent],
+  imports: [ModalComponent, ModalFooterDirective, IconComponent, EnviarCorreoModalComponent],
   template: `
     <app-modal [open]="open() && !!venta()" (closed)="closed.emit()" size="md">
       @if (venta(); as v) {
@@ -96,15 +97,12 @@ import { ModalComponent, ModalFooterDirective } from './modal.component';
         <div foot>
           <button class="btn btn-ghost" (click)="closed.emit()">Cerrar</button>
           <button class="btn btn-outline" (click)="imprimir(v)"><app-icon name="printer" [size]="15" /> Imprimir</button>
-          @if (waUrl(v)) {
-            <a class="btn btn-outline" [href]="waUrl(v)" target="_blank" rel="noopener"><app-icon name="phone" [size]="15" /> WhatsApp</a>
-          }
-          @if (mailUrl(v)) {
-            <a class="btn btn-outline" [href]="mailUrl(v)" target="_blank" rel="noopener"><app-icon name="mail" [size]="15" /> Email</a>
-          }
+          <button class="btn btn-outline" (click)="abrirCorreo(v)"><app-icon name="mail" [size]="15" /> Email</button>
         </div>
       }
     </app-modal>
+
+    <app-enviar-correo-modal [abierto]="correoOpen()" [venta]="correoVenta()" (cerrado)="correoOpen.set(false)" />
   `,
   styles: [
     `
@@ -303,6 +301,9 @@ export class ComprobanteModalComponent {
   readonly open = input(false);
   readonly closed = output();
 
+  readonly correoOpen = signal(false);
+  readonly correoVenta = signal<VentaResponse | null>(null);
+
   private readonly api = inject(ApiService);
   private readonly destroy = inject(DestroyRef);
   private readonly negocio = signal<ConfiguracionResponse | null>(null);
@@ -324,6 +325,10 @@ export class ComprobanteModalComponent {
         direccion: '',
         telefono: '',
         email: '',
+        smtpHost: '',
+        smtpPort: '587',
+        smtpUsername: '',
+        smtpPassword: '',
       }
     );
   }
@@ -341,12 +346,9 @@ export class ComprobanteModalComponent {
     printBoleta(v, this.negocioVal());
   }
 
-  waUrl(v: VentaResponse): string {
-    return waLink(v.clienteTelefono, boletaTexto(v, this.negocioVal()));
-  }
-
-  mailUrl(v: VentaResponse): string {
-    return mailLink(v.clienteEmail, `${tipoComprobanteLabel(v.tipoComprobante)} ${this.comprobante(v)}`, boletaTexto(v, this.negocioVal()));
+  abrirCorreo(v: VentaResponse) {
+    this.correoVenta.set(v);
+    this.correoOpen.set(true);
   }
 
   protected readonly money = money;
