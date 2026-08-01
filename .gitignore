@@ -1,8 +1,13 @@
+# Backend
 .gradle/
 build/
 target/
+
+# Frontend
 node_modules/
-sistema_venta_frontend/
+dist/
+
+# General
 *.log
 .idea/
 .vscode/
