@@ -21,6 +21,10 @@ public class ConfiguracionService {
     public static final String KEY_DIRECCION = "negocio.direccion";
     public static final String KEY_TELEFONO = "negocio.telefono";
     public static final String KEY_EMAIL = "negocio.email";
+    public static final String KEY_SMTP_HOST = "smtp.host";
+    public static final String KEY_SMTP_PORT = "smtp.port";
+    public static final String KEY_SMTP_USERNAME = "smtp.username";
+    public static final String KEY_SMTP_PASSWORD = "smtp.password";
 
     private final ConfiguracionRepository configuracionRepository;
 
@@ -47,7 +51,11 @@ public class ConfiguracionService {
                 get(KEY_RUC, ""),
                 get(KEY_DIRECCION, ""),
                 get(KEY_TELEFONO, ""),
-                get(KEY_EMAIL, ""));
+                get(KEY_EMAIL, ""),
+                get(KEY_SMTP_HOST, "smtp.gmail.com"),
+                get(KEY_SMTP_PORT, "587"),
+                get(KEY_SMTP_USERNAME, ""),
+                get(KEY_SMTP_PASSWORD, ""));
     }
 
     @Transactional
@@ -60,6 +68,10 @@ public class ConfiguracionService {
         valores.put(KEY_DIRECCION, request.direccion() == null ? "" : request.direccion());
         valores.put(KEY_TELEFONO, request.telefono() == null ? "" : request.telefono());
         valores.put(KEY_EMAIL, request.email() == null ? "" : request.email());
+        valores.put(KEY_SMTP_HOST, request.smtpHost() == null ? "" : request.smtpHost());
+        valores.put(KEY_SMTP_PORT, request.smtpPort() == null ? "" : request.smtpPort());
+        valores.put(KEY_SMTP_USERNAME, request.smtpUsername() == null ? "" : request.smtpUsername());
+        valores.put(KEY_SMTP_PASSWORD, request.smtpPassword() == null ? "" : request.smtpPassword());
         for (Map.Entry<String, String> entry : valores.entrySet()) {
             guardar(entry.getKey(), entry.getValue());
         }
