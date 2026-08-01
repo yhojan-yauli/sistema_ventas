@@ -1,12 +1,15 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ToastContainerComponent } from './shared/toast-container.component';
+import { ConfirmDialogComponent } from './shared/confirm-dialog.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.scss'
+  imports: [RouterOutlet, ToastContainerComponent, ConfirmDialogComponent],
+  template: `
+    <router-outlet />
+    <app-toast-container />
+    <app-confirm-dialog />
+  `,
 })
-export class App {
-  protected readonly title = signal('sistema_venta_frontend');
-}
+export class App {}
