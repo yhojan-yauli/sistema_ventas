@@ -325,6 +325,8 @@ export class MovimientosComponent implements OnInit {
 
   readonly cajas = signal<CajaResponse[]>([]);
   readonly historial = signal<SesionResponse[]>([]);
+  private loadedCajas = false;
+  private loadedHistorial = false;
 
   readonly sesiones = computed<SesionCuadre[]>(() =>
     this.historial().map((s) => {
@@ -360,21 +362,25 @@ export class MovimientosComponent implements OnInit {
     this.cajaService
       .cajas()
       .pipe(takeUntilDestroyed(this.destroy))
-      .subscribe((cs) => {
-        this.cajas.set(cs);
-        this.checkLoaded();
+      .subscribe({
+        next: (cs) => this.cajas.set(cs),
+        error: () => this.cajas.set([]),
+        complete: () => this.markLoaded(),
       });
     this.cajaService
       .historialSesiones()
       .pipe(takeUntilDestroyed(this.destroy))
-      .subscribe((ss) => {
-        this.historial.set(ss);
-        this.checkLoaded();
+      .subscribe({
+        next: (ss) => this.historial.set(ss),
+        error: () => this.historial.set([]),
+        complete: () => this.markLoaded(),
       });
   }
 
-  private checkLoaded() {
-    if (this.cajas().length > 0 || this.historial().length > 0) {
+  private markLoaded() {
+    this.loadedCajas = true;
+    this.loadedHistorial = true;
+    if (this.loadedCajas && this.loadedHistorial) {
       this.loading.set(false);
     }
   }
