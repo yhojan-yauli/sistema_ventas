@@ -252,7 +252,7 @@ export class ClientesComponent implements OnInit {
             direccion: r.direccion ?? '',
             email: r.email ?? '',
           });
-          this.consultaOrigen.set(r.local ? 'Encontrado en tu base de datos' : 'Datos obtenidos de RENIEC/SUNAT');
+          this.consultaOrigen.set(r.local ? 'Encontrado en tu base de datos' : 'Datos obtenidos en línea');
           this.toast.success(r.local ? 'Cliente encontrado en tu base de datos' : 'Datos del documento cargados');
         },
         error: (e) => {
