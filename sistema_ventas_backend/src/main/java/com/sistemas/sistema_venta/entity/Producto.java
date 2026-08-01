@@ -51,6 +51,12 @@ public class Producto {
     @Column(name = "stock_minimo", nullable = false)
     private Integer stockMinimo;
 
+    @Column(name = "venta_por_peso", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean ventaPorPeso;
+
+    @Column(name = "peso_gramos")
+    private Integer pesoGramos;
+
     @Column(nullable = false)
     private Boolean activo;
 
@@ -62,6 +68,7 @@ public class Producto {
         if (stock == null) stock = 0;
         if (stockMinimo == null) stockMinimo = 0;
         if (incluyeIGV == null) incluyeIGV = true;
+        if (ventaPorPeso == null) ventaPorPeso = false;
         if (activo == null) activo = true;
         if (fechaCreacion == null) fechaCreacion = LocalDateTime.now();
     }

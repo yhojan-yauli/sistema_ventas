@@ -18,5 +18,7 @@ public record ProductoRequest(
         Boolean incluyeIGV,
         @Min(0) Integer stock,
         @Min(0) Integer stockMinimo,
+        Boolean ventaPorPeso,
+        @Min(1) Integer pesoGramos,
         Boolean activo) {
 }

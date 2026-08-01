@@ -10,6 +10,8 @@ import java.util.List;
 public record VentaResponse(
         Long id,
         Long sesionId,
+        Long cajaId,
+        String cajaNombre,
         Long vendedorId,
         String vendedorNombre,
         Long clienteId,

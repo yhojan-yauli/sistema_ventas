@@ -39,6 +39,9 @@ public class DetalleVenta {
     @Column(name = "precio_compra", nullable = false, precision = 18, scale = 2)
     private BigDecimal precioCompra;
 
+    @Column(name = "peso_gramos")
+    private Integer pesoGramos;
+
     @Column(name = "descuento_linea", nullable = false, precision = 18, scale = 2)
     private BigDecimal descuentoLinea;
 

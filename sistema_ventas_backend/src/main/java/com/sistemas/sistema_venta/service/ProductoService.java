@@ -138,6 +138,8 @@ public class ProductoService {
         producto.setIncluyeIGV(request.incluyeIGV() == null || request.incluyeIGV());
         producto.setStock(request.stock() == null ? 0 : request.stock());
         producto.setStockMinimo(request.stockMinimo() == null ? 0 : request.stockMinimo());
+        producto.setVentaPorPeso(Boolean.TRUE.equals(request.ventaPorPeso()));
+        producto.setPesoGramos(Boolean.TRUE.equals(request.ventaPorPeso()) ? request.pesoGramos() : null);
         if (request.categoriaId() != null) {
             Categoria categoria = categoriaRepository.findById(request.categoriaId())
                     .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));

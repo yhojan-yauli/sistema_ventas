@@ -14,5 +14,7 @@ public record ProductoResponse(
         Boolean incluyeIGV,
         Integer stock,
         Integer stockMinimo,
+        Boolean ventaPorPeso,
+        Integer pesoGramos,
         Boolean activo) {
 }

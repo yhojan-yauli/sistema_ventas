@@ -9,6 +9,7 @@ public record ItemVentaResponse(
         Integer cantidad,
         BigDecimal precioVenta,
         BigDecimal precioCompra,
+        Integer pesoGramos,
         BigDecimal descuentoLinea,
         BigDecimal subtotal,
         BigDecimal ganancia) {

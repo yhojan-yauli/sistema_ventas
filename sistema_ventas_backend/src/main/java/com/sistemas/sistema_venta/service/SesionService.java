@@ -70,7 +70,7 @@ public class SesionService {
         SesionCaja sesion = SesionCaja.builder()
                 .caja(caja)
                 .usuario(usuario)
-                .montoInicial(request.montoInicial() == null ? CERO : request.montoInicial())
+                .montoInicial(request.montoInicial() == null ? (caja.getSaldo() == null ? CERO : caja.getSaldo()) : request.montoInicial())
                 .estado(EstadoSesion.ABIERTA)
                 .observaciones(request.observaciones())
                 .build();
@@ -110,6 +110,9 @@ public class SesionService {
                     .diferencia(realMetodo.subtract(esperadoMetodo))
                     .build());
         }
+
+        BigDecimal efectivoFinal = esperado.getOrDefault(TipoPago.EFECTIVO, CERO);
+        cajaService.actualizarSaldo(sesion.getCaja().getId(), efectivoFinal);
 
         sesion.setEstado(EstadoSesion.CERRADA);
         sesion.setFechaCierre(LocalDateTime.now());

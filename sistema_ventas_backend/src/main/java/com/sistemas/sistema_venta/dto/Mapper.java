@@ -27,7 +27,7 @@ public final class Mapper {
     }
 
     public static CajaResponse toCajaResponse(Caja c) {
-        return new CajaResponse(c.getId(), c.getNombre(), c.getDescripcion(), c.getActiva(), c.getFechaCreacion());
+        return new CajaResponse(c.getId(), c.getNombre(), c.getDescripcion(), c.getActiva(), c.getFechaCreacion(), c.getSaldo(), c.getFechaUltimoCierre());
     }
 
     public static CategoriaResponse toCategoriaResponse(Categoria c) {
@@ -47,6 +47,8 @@ public final class Mapper {
                 p.getIncluyeIGV(),
                 p.getStock(),
                 p.getStockMinimo(),
+                p.getVentaPorPeso(),
+                p.getPesoGramos(),
                 p.getActivo());
     }
 
@@ -88,6 +90,7 @@ public final class Mapper {
                 d.getCantidad(),
                 d.getPrecioVenta(),
                 d.getPrecioCompra(),
+                d.getPesoGramos(),
                 d.getDescuentoLinea(),
                 d.getSubtotal(),
                 ganancia);
@@ -104,6 +107,8 @@ public final class Mapper {
         return new VentaResponse(
                 v.getId(),
                 v.getSesion().getId(),
+                v.getSesion().getCaja().getId(),
+                v.getSesion().getCaja().getNombre(),
                 v.getVendedor().getId(),
                 v.getVendedor().getNombre(),
                 v.getCliente() != null ? v.getCliente().getId() : null,
