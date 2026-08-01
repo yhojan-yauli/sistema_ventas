@@ -1,0 +1,9 @@
+.gradle/
+build/
+target/
+node_modules/
+sistema_venta_frontend/
+*.log
+.idea/
+.vscode/
+.DS_Store
