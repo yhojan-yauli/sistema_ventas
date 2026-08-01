@@ -43,7 +43,7 @@ public class ReporteService {
     @Transactional(readOnly = true)
     public VentaResumen resumenVentas(LocalDateTime desde, LocalDateTime hasta, Long vendedorId, Long productoId,
                                       TipoPago tipoPago, TipoComprobante tipoComprobante) {
-        Object[] r = ventaRepository.resumenVentas(desde, hasta, vendedorId, tipoPago, tipoComprobante, productoId);
+        Object[] r = primeraFila(ventaRepository.resumenVentas(desde, hasta, vendedorId, tipoPago, tipoComprobante, productoId));
         BigDecimal ganancia = ventaRepository.sumGanancia(desde, hasta, vendedorId, tipoPago, tipoComprobante, productoId);
         return new VentaResumen(
                 (Long) r[0],
@@ -52,6 +52,13 @@ public class ReporteService {
                 (BigDecimal) r[3],
                 (BigDecimal) r[4],
                 ganancia);
+    }
+
+    private Object[] primeraFila(List<Object[]> filas) {
+        if (filas.isEmpty()) {
+            return new Object[]{0L, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
+        }
+        return filas.get(0);
     }
 
     @Transactional(readOnly = true)
@@ -134,11 +141,11 @@ public class ReporteService {
     public DashboardResponse dashboard() {
         LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
         LocalDateTime finHoy = inicioHoy.plusDays(1);
-        Object[] r = ventaRepository.resumenVentas(inicioHoy, finHoy, null, null, null, null);
+        Object[] r = primeraFila(ventaRepository.resumenVentas(inicioHoy, finHoy, null, null, null, null));
         BigDecimal gananciaHoy = ventaRepository.sumGanancia(inicioHoy, finHoy, null, null, null, null);
 
         LocalDateTime inicioMes = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        Object[] rMes = ventaRepository.resumenVentas(inicioMes, null, null, null, null, null);
+        Object[] rMes = primeraFila(ventaRepository.resumenVentas(inicioMes, null, null, null, null, null));
 
         long stockBajo = productoRepository.findByActivoTrueAndStockLessThanEqualOrderByStockAsc(0).size();
         return new DashboardResponse(

@@ -49,7 +49,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
     @Query("SELECT COUNT(v), COALESCE(SUM(v.total), 0), COALESCE(SUM(v.igv), 0), " +
             "COALESCE(SUM(v.subtotal), 0), COALESCE(SUM(v.descuento), 0) " +
             "FROM Venta v WHERE " + FILTROS_VENTA)
-    Object[] resumenVentas(
+    List<Object[]> resumenVentas(
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,

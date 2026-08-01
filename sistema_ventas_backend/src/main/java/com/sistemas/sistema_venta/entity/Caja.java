@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -34,9 +35,16 @@ public class Caja {
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal saldo;
+
+    @Column(name = "fecha_ultimo_cierre")
+    private LocalDateTime fechaUltimoCierre;
+
     @PrePersist
     void prePersist() {
         if (activa == null) activa = true;
+        if (saldo == null) saldo = BigDecimal.ZERO;
         if (fechaCreacion == null) fechaCreacion = LocalDateTime.now();
     }
 }

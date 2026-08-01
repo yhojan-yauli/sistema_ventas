@@ -27,7 +27,7 @@ public final class Mapper {
     }
 
     public static CajaResponse toCajaResponse(Caja c) {
-        return new CajaResponse(c.getId(), c.getNombre(), c.getDescripcion(), c.getActiva(), c.getFechaCreacion());
+        return new CajaResponse(c.getId(), c.getNombre(), c.getDescripcion(), c.getActiva(), c.getFechaCreacion(), c.getSaldo(), c.getFechaUltimoCierre());
     }
 
     public static CategoriaResponse toCategoriaResponse(Categoria c) {

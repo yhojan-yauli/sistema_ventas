@@ -10,6 +10,8 @@ import com.sistemas.sistema_venta.repository.CajaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -65,6 +67,14 @@ public class CajaService {
         Caja caja = getCaja(id);
         caja.setActiva(false);
         cajaRepository.save(caja);
+    }
+
+    @Transactional
+    public CajaResponse actualizarSaldo(Long id, BigDecimal saldo) {
+        Caja caja = getCaja(id);
+        caja.setSaldo(saldo == null ? BigDecimal.ZERO : saldo);
+        caja.setFechaUltimoCierre(LocalDateTime.now());
+        return Mapper.toCajaResponse(cajaRepository.save(caja));
     }
 
     public Caja getCaja(Long id) {
