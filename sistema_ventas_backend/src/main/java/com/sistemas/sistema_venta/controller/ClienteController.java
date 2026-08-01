@@ -1,7 +1,9 @@
 package com.sistemas.sistema_venta.controller;
 
+import com.sistemas.sistema_venta.dto.cliente.ClienteConsultaResponse;
 import com.sistemas.sistema_venta.dto.cliente.ClienteRequest;
 import com.sistemas.sistema_venta.dto.cliente.ClienteResponse;
+import com.sistemas.sistema_venta.enums.TipoDocumento;
 import com.sistemas.sistema_venta.service.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,11 @@ public class ClienteController {
     @GetMapping
     public List<ClienteResponse> listar(@RequestParam(required = false) String q) {
         return clienteService.buscar(q);
+    }
+
+    @GetMapping("/buscar-consulta")
+    public ClienteConsultaResponse buscarConsulta(@RequestParam TipoDocumento tipo, @RequestParam String numero) {
+        return clienteService.buscarConsulta(tipo, numero);
     }
 
     @GetMapping("/{id}")
