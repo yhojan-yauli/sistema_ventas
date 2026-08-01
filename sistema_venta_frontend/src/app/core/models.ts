@@ -290,6 +290,7 @@ export interface SesionResponse {
 export interface ItemVentaRequest {
   productoId: number;
   cantidad: number;
+  pesoGramos?: number | null;
   descuento?: number | null;
 }
 
@@ -325,6 +326,8 @@ export interface VentaResponse {
   clienteId: number | null;
   clienteNombre: string | null;
   clienteDocumento: string | null;
+  clienteTelefono: string | null;
+  clienteEmail: string | null;
   tipoPago: TipoPago;
   tipoComprobante: TipoComprobante;
   serie: string;

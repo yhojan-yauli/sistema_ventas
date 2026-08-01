@@ -2,12 +2,14 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { boletaTexto, mailLink, printBoleta, waLink } from '../../core/boleta';
 import { ClienteResponse, ConfiguracionResponse, ProductoResponse, SesionResponse, TipoComprobante, TipoPago, VentaResponse } from '../../core/models';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CajaService } from '../../core/services/caja.service';
 import { ToastService } from '../../core/services/toast.service';
 import { VentaService } from '../../core/services/venta.service';
-import { TIPOS_COMPROBANTE, TIPOS_DOCUMENTO, TIPOS_PAGO, errorMessage, money, tipoComprobanteLabel, tipoPagoLabel } from '../../core/utils';
+import { TIPOS_COMPROBANTE, TIPOS_DOCUMENTO, TIPOS_PAGO, dateTime, errorMessage, money, tipoComprobanteLabel, tipoPagoLabel } from '../../core/utils';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent, ModalFooterDirective } from '../../shared/modal.component';
 
@@ -42,6 +44,7 @@ interface CartItem {
         </div>
         @if (sesion()) {
           <div class="page-actions">
+            <button class="btn btn-outline" (click)="openBoletas()"><app-icon name="history" [size]="16" /> Boletas</button>
             <button class="btn btn-outline" (click)="reload()"><app-icon name="refresh" [size]="16" /> Actualizar</button>
           </div>
         }
@@ -68,12 +71,12 @@ interface CartItem {
                   <span class="prod-tile-code">{{ p.codigo ?? '—' }}</span>
                   <b>{{ p.nombre }}</b>
                   @if (p.ventaPorPeso) {
-                    <small class="prod-tile-peso">{{ p.pesoGramos }} g por porción</small>
+                    <small class="prod-tile-peso">Venta por peso</small>
                   }
                   <div class="prod-tile-foot">
-                    <span class="money">{{ money(precioPorcion(p)) }}</span>
+                    <span class="money">{{ money(p.precioVenta) }}@if (p.ventaPorPeso) { <small class="peso-kg">/kg</small> }</span>
                     <span class="badge" [class.badge-danger]="p.stock === 0" [class.badge-warning]="p.stock > 0 && p.stock <= p.stockMinimo" [class.badge-success]="p.stock > p.stockMinimo">
-                      {{ p.stock }} {{ p.ventaPorPeso ? 'porc.' : 'uds.' }}
+                      {{ p.stock }} {{ p.ventaPorPeso ? 'kg' : 'uds.' }}
                     </span>
                   </div>
                 </button>
@@ -98,18 +101,25 @@ interface CartItem {
                       <b>{{ item.nombre }}</b>
                       <small>
                         @if (item.ventaPorPeso) {
-                          {{ money(item.precio) }} / porción · {{ item.pesoGramos }} g · {{ item.stock }} disponibles
+                          {{ money(item.precio) }} /kg · {{ item.stock }} kg disponibles
                         } @else {
                           {{ money(item.precio) }} c/u · {{ item.stock }} disponibles
                         }
                       </small>
                     </div>
-                    <div class="cart-qty">
-                      <button class="qty-btn" (click)="dec(item)">−</button>
-                      <span>{{ item.cantidad }}</span>
-                      <button class="qty-btn" (click)="inc(item)">+</button>
-                    </div>
-                    <div class="cart-line-total">{{ money(item.precio * item.cantidad) }}</div>
+                    @if (item.ventaPorPeso) {
+                      <div class="cart-weight">
+                        <input class="input" type="number" step="0.001" min="0.001" [value]="(item.pesoGramos ?? 0) / 1000"
+                          (change)="setPeso(item, $any($event.target).value)" title="Peso en kilogramos" />
+                      </div>
+                    } @else {
+                      <div class="cart-qty">
+                        <button class="qty-btn" (click)="dec(item)">−</button>
+                        <span>{{ item.cantidad }}</span>
+                        <button class="qty-btn" (click)="inc(item)">+</button>
+                      </div>
+                    }
+                    <div class="cart-line-total">{{ money(linea(item)) }}</div>
                     <button class="cart-remove" (click)="remove(item)"><app-icon name="x" [size]="14" /></button>
                   </div>
                 }
@@ -238,7 +248,47 @@ interface CartItem {
       </div>
       <div foot>
         <button class="btn btn-ghost" (click)="successOpen.set(false)">Cerrar</button>
+        @if (lastVenta(); as v) {
+          <button class="btn btn-outline" (click)="printVenta(v)"><app-icon name="printer" [size]="15" /> Imprimir</button>
+          @if (waUrl(v)) {
+            <a class="btn btn-outline" [href]="waUrl(v)" target="_blank" rel="noopener"><app-icon name="phone" [size]="15" /> WhatsApp</a>
+          }
+          @if (mailUrl(v)) {
+            <a class="btn btn-outline" [href]="mailUrl(v)" target="_blank" rel="noopener"><app-icon name="mail" [size]="15" /> Email</a>
+          }
+        }
         <button class="btn btn-primary" (click)="newSale()"><app-icon name="plus" [size]="15" /> Nueva venta</button>
+      </div>
+    </app-modal>
+
+    <!-- Boletas (historial y reimpresión) -->
+    <app-modal [open]="boletasOpen()" (closed)="boletasOpen.set(false)" size="md">
+      <span head>Boletas</span>
+      <div class="boletas-list">
+        @if (boletasLoading()) {
+          <div class="empty-state"><span class="spinner"></span> Cargando…</div>
+        } @else if (boletas().length === 0) {
+          <div class="empty-state"><app-icon name="history" [size]="30" /><p>No hay ventas registradas</p></div>
+        } @else {
+          @for (v of boletas(); track v.id) {
+            <div class="boleta-row">
+              <div class="boleta-info">
+                <b>{{ v.serie }}-{{ v.numero }}</b>
+                <small>{{ dateTime(v.fecha) }} · {{ tipoComprobanteLabel(v.tipoComprobante) }} · {{ tipoPagoLabel(v.tipoPago) }}</small>
+                <small>{{ v.clienteNombre ?? 'Cliente mostrador' }} · <b>{{ money(v.total) }}</b></small>
+              </div>
+              <div class="boleta-actions">
+                <button class="btn btn-outline" title="Imprimir boleta" (click)="printVenta(v)"><app-icon name="printer" [size]="15" /> Imprimir</button>
+                @if (waUrl(v)) {
+                  <a class="btn btn-outline" title="Enviar por WhatsApp" [href]="waUrl(v)" target="_blank" rel="noopener"><app-icon name="phone" [size]="15" /></a>
+                }
+                @if (mailUrl(v)) {
+                  <a class="btn btn-outline" title="Enviar por correo" [href]="mailUrl(v)" target="_blank" rel="noopener"><app-icon name="mail" [size]="15" /></a>
+                }
+              </div>
+            </div>
+          }
+        }
       </div>
     </app-modal>
   `,
@@ -344,6 +394,11 @@ interface CartItem {
         color: var(--brand);
         font-weight: 700;
       }
+      .peso-kg {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-faint);
+      }
       .prod-tile-foot {
         width: 100%;
         display: flex;
@@ -442,6 +497,16 @@ interface CartItem {
         font-weight: 700;
         font-size: 13px;
         min-width: 64px;
+        text-align: right;
+      }
+      .cart-weight {
+        min-width: 0;
+      }
+      .cart-weight .input {
+        width: 92px;
+        padding: 6px 8px;
+        font-weight: 700;
+        font-size: 13px;
         text-align: right;
       }
       .cart-remove {
@@ -655,6 +720,43 @@ interface CartItem {
         border-color: var(--brand);
         background: var(--brand-softer);
       }
+      .boletas-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+      .boleta-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border: 1px solid var(--border-soft);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: var(--surface-soft);
+      }
+      .boleta-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        line-height: 1.3;
+        min-width: 0;
+      }
+      .boleta-info b {
+        font-size: 13px;
+      }
+      .boleta-info small {
+        color: var(--text-faint);
+        font-size: 11.5px;
+      }
+      .boleta-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
     `,
   ],
 })
@@ -663,6 +765,7 @@ export class VentasComponent implements OnInit {
   private readonly cajaService = inject(CajaService);
   private readonly ventaService = inject(VentaService);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly destroy = inject(DestroyRef);
 
@@ -681,6 +784,10 @@ export class VentasComponent implements OnInit {
   readonly saving = signal(false);
   readonly successOpen = signal(false);
   readonly lastVenta = signal<VentaResponse | null>(null);
+  readonly boletasOpen = signal(false);
+  readonly boletas = signal<VentaResponse[]>([]);
+  readonly boletasLoading = signal(false);
+  private readonly negocio = signal<ConfiguracionResponse | null>(null);
 
   readonly clienteQ = signal('');
   readonly clienteResults = signal<ClienteResponse[]>([]);
@@ -709,7 +816,7 @@ export class VentasComponent implements OnInit {
     const tasa = this.precioIncluyeIGV ? this.igvTasa : 0;
     let total = 0;
     for (const it of this.cart()) {
-      const linea = it.precio * it.cantidad;
+      const linea = this.linea(it);
       total += this.precioIncluyeIGV ? linea : linea * (1 + tasa / 100);
     }
     return total - this.descuento();
@@ -744,6 +851,7 @@ export class VentasComponent implements OnInit {
       .subscribe((c: ConfiguracionResponse) => {
         this.igvTasa = c.igvPorcentaje;
         this.precioIncluyeIGV = c.precioIncluyeIGV;
+        this.negocio.set(c);
       });
     this.reload();
   }
@@ -767,6 +875,10 @@ export class VentasComponent implements OnInit {
     this.cart.update((items) => {
       const existing = items.find((i) => i.productoId === p.id);
       if (existing) {
+        if (existing.ventaPorPeso) {
+          this.toast.warning(`Ajusta el peso de "${p.nombre}" en el carrito`);
+          return items;
+        }
         if (existing.cantidad >= p.stock) {
           this.toast.warning(`Stock máximo de "${p.nombre}"`);
           return items;
@@ -779,22 +891,34 @@ export class VentasComponent implements OnInit {
           productoId: p.id,
           nombre: p.nombre,
           codigo: p.codigo,
-          precio: this.precioPorcion(p),
+          precio: p.precioVenta,
           incluyeIGV: p.incluyeIGV,
           stock: p.stock,
           cantidad: 1,
           ventaPorPeso: p.ventaPorPeso,
-          pesoGramos: p.pesoGramos,
+          pesoGramos: p.ventaPorPeso ? (p.pesoGramos && p.pesoGramos > 0 ? p.pesoGramos : 1000) : p.pesoGramos,
         },
       ];
     });
   }
 
-  precioPorcion(p: ProductoResponse): number {
-    if (p.ventaPorPeso && p.pesoGramos && p.pesoGramos > 0) {
-      return Math.round((p.precioVenta * p.pesoGramos * 100) / 1000) / 100;
+  linea(item: CartItem): number {
+    if (item.ventaPorPeso) {
+      return item.precio * ((item.pesoGramos ?? 0) / 1000);
     }
-    return p.precioVenta;
+    return item.precio * item.cantidad;
+  }
+
+  setPeso(item: CartItem, value: string) {
+    const kg = Number(value);
+    if (!kg || kg <= 0) {
+      this.toast.warning('Peso inválido');
+      return;
+    }
+    const gramos = Math.round(kg * 1000);
+    this.cart.update((items) =>
+      items.map((i) => (i.productoId === item.productoId ? { ...i, pesoGramos: gramos } : i))
+    );
   }
 
   inc(item: CartItem) {
@@ -894,7 +1018,17 @@ export class VentasComponent implements OnInit {
       return;
     }
     const c = this.cliente();
-    const items = this.cart().map((i) => ({ productoId: i.productoId, cantidad: i.cantidad, descuento: 0 }));
+    const pesoMal = this.cart().some((i) => i.ventaPorPeso && (i.pesoGramos ?? 0) / 1000 > i.stock);
+    if (pesoMal) {
+      this.toast.warning('El peso de un producto excede el stock disponible');
+      return;
+    }
+    const items = this.cart().map((i) => ({
+      productoId: i.productoId,
+      cantidad: i.cantidad,
+      pesoGramos: i.ventaPorPeso ? i.pesoGramos : null,
+      descuento: 0,
+    }));
     this.saving.set(true);
     this.ventaService
       .crear({
@@ -929,7 +1063,58 @@ export class VentasComponent implements OnInit {
     this.q.set('');
   }
 
+  openBoletas() {
+    this.boletasOpen.set(true);
+    this.loadBoletas();
+  }
+
+  loadBoletas() {
+    this.boletasLoading.set(true);
+    const obs = this.auth.isAdmin ? this.ventaService.ventas() : this.ventaService.misVentas();
+    obs.pipe(takeUntilDestroyed(this.destroy)).subscribe({
+      next: (vs) => {
+        this.boletas.set(vs);
+        this.boletasLoading.set(false);
+      },
+      error: () => {
+        this.boletasLoading.set(false);
+        this.toast.error('No se pudo cargar el historial de boletas');
+      },
+    });
+  }
+
+  negocioVal(): ConfiguracionResponse {
+    return (
+      this.negocio() ?? {
+        igvPorcentaje: this.igvTasa,
+        precioIncluyeIGV: this.precioIncluyeIGV,
+        razonSocial: '',
+        ruc: '',
+        direccion: '',
+        telefono: '',
+        email: '',
+      }
+    );
+  }
+
+  ticketText(v: VentaResponse): string {
+    return boletaTexto(v, this.negocioVal());
+  }
+
+  printVenta(v: VentaResponse) {
+    printBoleta(v, this.negocioVal());
+  }
+
+  waUrl(v: VentaResponse): string {
+    return waLink(v.clienteTelefono, this.ticketText(v));
+  }
+
+  mailUrl(v: VentaResponse): string {
+    return mailLink(v.clienteEmail, `Boleta ${v.serie}-${String(v.numero).padStart(4, '0')}`, this.ticketText(v));
+  }
+
   protected readonly money = money;
+  protected readonly dateTime = dateTime;
   protected readonly tipoPagoLabel = tipoPagoLabel;
   protected readonly tipoComprobanteLabel = tipoComprobanteLabel;
 }
