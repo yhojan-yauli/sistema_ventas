@@ -74,18 +74,19 @@ public class VentaService {
             if (!Boolean.TRUE.equals(producto.getActivo())) {
                 throw new BusinessException("El producto '" + producto.getNombre() + "' está inactivo");
             }
+            Integer peso = pesoEfectivo(producto, item);
             if (producto.getStock() < item.cantidad()) {
                 throw new BusinessException("Stock insuficiente de '" + producto.getNombre() + "' (disponible: " + producto.getStock() + ")");
             }
             BigDecimal descuentoLinea = item.descuento() == null ? CERO : item.descuento();
-            BigDecimal linea = precioUnidad(producto)
+            BigDecimal linea = precioUnidad(producto, peso)
                     .multiply(BigDecimal.valueOf(item.cantidad()))
                     .subtract(descuentoLinea);
             if (linea.compareTo(CERO) < 0) {
                 throw new BusinessException("El descuento no puede ser mayor al importe de la línea");
             }
             totalSinDescuento = totalSinDescuento.add(linea);
-            lineas.add(new LineaCalculada(producto, item.cantidad(), descuentoLinea, linea));
+            lineas.add(new LineaCalculada(producto, item.cantidad(), descuentoLinea, linea, peso));
         }
 
         BigDecimal descuentoGlobal = request.descuento() == null ? CERO : request.descuento();
@@ -121,9 +122,9 @@ public class VentaService {
             DetalleVenta detalle = DetalleVenta.builder()
                     .producto(line.producto())
                     .cantidad(line.cantidad())
-                    .precioVenta(precioUnidad(line.producto()))
-                    .precioCompra(costoUnidad(line.producto()))
-                    .pesoGramos(Boolean.TRUE.equals(line.producto().getVentaPorPeso()) ? line.producto().getPesoGramos() : null)
+                    .precioVenta(precioUnidad(line.producto(), line.pesoGramos()))
+                    .precioCompra(costoUnidad(line.producto(), line.pesoGramos()))
+                    .pesoGramos(line.pesoGramos())
                     .descuentoLinea(line.descuentoLinea())
                     .subtotal(line.totalLinea().setScale(SCALE, RoundingMode.HALF_UP))
                     .build();
@@ -233,12 +234,25 @@ public class VentaService {
                 });
     }
 
-    private BigDecimal precioUnidad(Producto producto) {
-        return precioPorUnidad(producto.getPrecioVenta(), producto.getVentaPorPeso(), producto.getPesoGramos());
+    private Integer pesoEfectivo(Producto producto, ItemVentaRequest item) {
+        if (!Boolean.TRUE.equals(producto.getVentaPorPeso())) {
+            return null;
+        }
+        Integer peso = item.pesoGramos() != null && item.pesoGramos() > 0
+                ? item.pesoGramos()
+                : producto.getPesoGramos();
+        if (peso == null || peso <= 0) {
+            throw new BusinessException("Indica el peso del producto '" + producto.getNombre() + "' (gramos)");
+        }
+        return peso;
     }
 
-    private BigDecimal costoUnidad(Producto producto) {
-        return precioPorUnidad(producto.getPrecioCompra(), producto.getVentaPorPeso(), producto.getPesoGramos());
+    private BigDecimal precioUnidad(Producto producto, Integer pesoGramos) {
+        return precioPorUnidad(producto.getPrecioVenta(), producto.getVentaPorPeso(), pesoGramos);
+    }
+
+    private BigDecimal costoUnidad(Producto producto, Integer pesoGramos) {
+        return precioPorUnidad(producto.getPrecioCompra(), producto.getVentaPorPeso(), pesoGramos);
     }
 
     private BigDecimal precioPorUnidad(BigDecimal precioBase, Boolean ventaPorPeso, Integer pesoGramos) {
@@ -253,6 +267,7 @@ public class VentaService {
             Producto producto,
             Integer cantidad,
             BigDecimal descuentoLinea,
-            BigDecimal totalLinea) {
+            BigDecimal totalLinea,
+            Integer pesoGramos) {
     }
 }

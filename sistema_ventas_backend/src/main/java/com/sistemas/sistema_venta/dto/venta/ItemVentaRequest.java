@@ -8,5 +8,6 @@ import java.math.BigDecimal;
 public record ItemVentaRequest(
         @NotNull Long productoId,
         @NotNull @Min(1) Integer cantidad,
+        Integer pesoGramos,
         BigDecimal descuento) {
 }

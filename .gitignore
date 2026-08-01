@@ -1,2 +1,14 @@
-# Solo se sube el frontend en esta rama
-/sistema_ventas_backend/
+# Backend
+.gradle/
+build/
+target/
+
+# Frontend
+node_modules/
+dist/
+
+# General
+*.log
+.idea/
+.vscode/
+.DS_Store

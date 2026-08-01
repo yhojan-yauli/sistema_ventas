@@ -17,6 +17,8 @@ public record VentaResponse(
         Long clienteId,
         String clienteNombre,
         String clienteDocumento,
+        String clienteTelefono,
+        String clienteEmail,
         TipoPago tipoPago,
         TipoComprobante tipoComprobante,
         String serie,

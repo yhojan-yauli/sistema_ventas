@@ -9,12 +9,9 @@ import com.sistemas.sistema_venta.enums.TipoDocumento;
 import com.sistemas.sistema_venta.exception.BusinessException;
 import com.sistemas.sistema_venta.exception.NotFoundException;
 import com.sistemas.sistema_venta.repository.ClienteRepository;
-import org.springframework.beans.factory.annotation.Value;
+import com.sistemas.sistema_venta.scrap.ConsultaDniService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,16 +20,11 @@ import java.util.Optional;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
-    private final RestClient restClient = RestClient.create();
-    private final String apisperuUrl;
-    private final String apisperuToken;
+    private final ConsultaDniService consultaDniService;
 
-    public ClienteService(ClienteRepository clienteRepository,
-                          @Value("${apisperu.url}") String apisperuUrl,
-                          @Value("${apisperu.token}") String apisperuToken) {
+    public ClienteService(ClienteRepository clienteRepository, ConsultaDniService consultaDniService) {
         this.clienteRepository = clienteRepository;
-        this.apisperuUrl = apisperuUrl;
-        this.apisperuToken = apisperuToken;
+        this.consultaDniService = consultaDniService;
     }
 
     @Transactional(readOnly = true)
@@ -52,36 +44,15 @@ public class ClienteService {
                     c.getTelefono(), c.getDireccion(), c.getEmail(), true);
         }
 
-        JsonNode body = consultarApi(tipo, n);
-        if (body.has("success") && !body.get("success").asBoolean()) {
-            String msg = body.path("message").asText("No se encontraron resultados");
-            throw new BusinessException(msg);
-        }
         if (tipo == TipoDocumento.DNI) {
-            String nombres = body.path("nombres").asText("");
-            String paterno = body.path("apellidoPaterno").asText("");
-            String materno = body.path("apellidoMaterno").asText("");
-            String nombre = (nombres + " " + paterno + " " + materno).replaceAll("\\s+", " ").trim();
-            if (nombre.isEmpty()) {
-                throw new BusinessException("No se encontraron datos para el DNI " + n);
-            }
+            String nombre = consultaDniService.buscarNombrePorDni(n);
             return new ClienteConsultaResponse(tipo.name(), n, nombre, null, null, null, false);
         }
-        String razonSocial = body.path("razonSocial").asText("");
-        String direccion = body.path("direccion").asText("");
-        if (razonSocial.isEmpty()) {
-            throw new BusinessException("No se encontraron datos para el RUC " + n);
+        if (n.startsWith("10")) {
+            String nombre = consultaDniService.buscarNombrePorRuc10(n);
+            return new ClienteConsultaResponse(tipo.name(), n, nombre, null, null, null, false);
         }
-        return new ClienteConsultaResponse(tipo.name(), n, razonSocial, null, direccion, null, false);
-    }
-
-    private JsonNode consultarApi(TipoDocumento tipo, String numero) {
-        String url = apisperuUrl + "/" + tipo.name().toLowerCase() + "/" + numero + "?token=" + apisperuToken;
-        try {
-            return restClient.get().uri(url).retrieve().body(JsonNode.class);
-        } catch (HttpClientErrorException e) {
-            throw new BusinessException("No se encontraron resultados para el " + tipo.name() + " " + numero);
-        }
+        throw new BusinessException("La consulta en línea solo soporta DNI y RUC de persona natural (RUC-10). Para RUC de empresa escríbelo manualmente.");
     }
 
     @Transactional(readOnly = true)
