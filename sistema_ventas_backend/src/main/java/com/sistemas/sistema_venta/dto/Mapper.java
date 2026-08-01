@@ -99,9 +99,13 @@ public final class Mapper {
     public static VentaResponse toVentaResponse(Venta v) {
         String clienteNombre = null;
         String clienteDocumento = null;
+        String clienteTelefono = null;
+        String clienteEmail = null;
         if (v.getCliente() != null) {
             clienteNombre = v.getCliente().getRazonSocial();
             clienteDocumento = v.getCliente().getTipoDocumento() + " " + v.getCliente().getNumeroDocumento();
+            clienteTelefono = v.getCliente().getTelefono();
+            clienteEmail = v.getCliente().getEmail();
         }
         List<ItemVentaResponse> items = v.getDetalles().stream().map(Mapper::toItemVentaResponse).toList();
         return new VentaResponse(
@@ -114,6 +118,8 @@ public final class Mapper {
                 v.getCliente() != null ? v.getCliente().getId() : null,
                 clienteNombre,
                 clienteDocumento,
+                clienteTelefono,
+                clienteEmail,
                 v.getTipoPago(),
                 v.getTipoComprobante(),
                 v.getSerie(),
