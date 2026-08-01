@@ -78,7 +78,7 @@ public class VentaService {
                 throw new BusinessException("Stock insuficiente de '" + producto.getNombre() + "' (disponible: " + producto.getStock() + ")");
             }
             BigDecimal descuentoLinea = item.descuento() == null ? CERO : item.descuento();
-            BigDecimal linea = producto.getPrecioVenta()
+            BigDecimal linea = precioUnidad(producto)
                     .multiply(BigDecimal.valueOf(item.cantidad()))
                     .subtract(descuentoLinea);
             if (linea.compareTo(CERO) < 0) {
@@ -121,8 +121,9 @@ public class VentaService {
             DetalleVenta detalle = DetalleVenta.builder()
                     .producto(line.producto())
                     .cantidad(line.cantidad())
-                    .precioVenta(line.producto().getPrecioVenta())
-                    .precioCompra(line.producto().getPrecioCompra())
+                    .precioVenta(precioUnidad(line.producto()))
+                    .precioCompra(costoUnidad(line.producto()))
+                    .pesoGramos(Boolean.TRUE.equals(line.producto().getVentaPorPeso()) ? line.producto().getPesoGramos() : null)
                     .descuentoLinea(line.descuentoLinea())
                     .subtotal(line.totalLinea().setScale(SCALE, RoundingMode.HALF_UP))
                     .build();
@@ -230,6 +231,22 @@ public class VentaService {
                             .build();
                     return serieComprobanteRepository.save(nueva);
                 });
+    }
+
+    private BigDecimal precioUnidad(Producto producto) {
+        return precioPorUnidad(producto.getPrecioVenta(), producto.getVentaPorPeso(), producto.getPesoGramos());
+    }
+
+    private BigDecimal costoUnidad(Producto producto) {
+        return precioPorUnidad(producto.getPrecioCompra(), producto.getVentaPorPeso(), producto.getPesoGramos());
+    }
+
+    private BigDecimal precioPorUnidad(BigDecimal precioBase, Boolean ventaPorPeso, Integer pesoGramos) {
+        if (!Boolean.TRUE.equals(ventaPorPeso) || pesoGramos == null || pesoGramos <= 0) {
+            return precioBase;
+        }
+        return precioBase.multiply(BigDecimal.valueOf(pesoGramos))
+                .divide(BigDecimal.valueOf(1000), SCALE, RoundingMode.HALF_UP);
     }
 
     private record LineaCalculada(

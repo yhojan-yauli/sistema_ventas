@@ -1,8 +1,10 @@
 package com.sistemas.sistema_venta.controller;
 
+import com.sistemas.sistema_venta.dto.compra.CompraResponse;
 import com.sistemas.sistema_venta.dto.reporte.DashboardResponse;
 import com.sistemas.sistema_venta.dto.reporte.GrupoVenta;
 import com.sistemas.sistema_venta.dto.reporte.ProductoVendido;
+import com.sistemas.sistema_venta.dto.reporte.StockReport;
 import com.sistemas.sistema_venta.dto.reporte.VentaResumen;
 import com.sistemas.sistema_venta.dto.venta.VentaResponse;
 import com.sistemas.sistema_venta.enums.TipoComprobante;
@@ -33,70 +35,99 @@ public class ReporteController {
     public VentaResumen resumen(@RequestParam(required = false) LocalDate desde,
                                 @RequestParam(required = false) LocalDate hasta,
                                 @RequestParam(required = false) Long vendedorId,
+                                @RequestParam(required = false) Long cajaId,
                                 @RequestParam(required = false) Long productoId,
                                 @RequestParam(required = false) TipoPago tipoPago,
                                 @RequestParam(required = false) TipoComprobante tipoComprobante) {
-        return reporteService.resumenVentas(toInicio(desde), toFin(hasta), vendedorId, productoId, tipoPago, tipoComprobante);
+        return reporteService.resumenVentas(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
     }
 
     @GetMapping("/ventas")
     public List<VentaResponse> ventas(@RequestParam(required = false) LocalDate desde,
                                       @RequestParam(required = false) LocalDate hasta,
                                       @RequestParam(required = false) Long vendedorId,
+                                      @RequestParam(required = false) Long cajaId,
                                       @RequestParam(required = false) Long productoId,
                                       @RequestParam(required = false) TipoPago tipoPago,
                                       @RequestParam(required = false) TipoComprobante tipoComprobante) {
-        return reporteService.listarVentas(toInicio(desde), toFin(hasta), vendedorId, productoId, tipoPago, tipoComprobante);
+        return reporteService.listarVentas(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
     }
 
     @GetMapping("/por-producto")
     public List<ProductoVendido> porProducto(@RequestParam(required = false) LocalDate desde,
                                              @RequestParam(required = false) LocalDate hasta,
                                              @RequestParam(required = false) Long vendedorId,
+                                             @RequestParam(required = false) Long cajaId,
                                              @RequestParam(required = false) Long productoId,
                                              @RequestParam(required = false) TipoPago tipoPago,
                                              @RequestParam(required = false) TipoComprobante tipoComprobante) {
-        return reporteService.porProducto(toInicio(desde), toFin(hasta), vendedorId, productoId, tipoPago, tipoComprobante);
+        return reporteService.porProducto(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
     }
 
     @GetMapping("/por-vendedor")
     public List<GrupoVenta> porVendedor(@RequestParam(required = false) LocalDate desde,
                                         @RequestParam(required = false) LocalDate hasta,
                                         @RequestParam(required = false) Long vendedorId,
+                                        @RequestParam(required = false) Long cajaId,
                                         @RequestParam(required = false) Long productoId,
                                         @RequestParam(required = false) TipoPago tipoPago,
                                         @RequestParam(required = false) TipoComprobante tipoComprobante) {
-        return reporteService.porVendedor(toInicio(desde), toFin(hasta), vendedorId, productoId, tipoPago, tipoComprobante);
+        return reporteService.porVendedor(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
+    }
+
+    @GetMapping("/por-caja")
+    public List<GrupoVenta> porCaja(@RequestParam(required = false) LocalDate desde,
+                                    @RequestParam(required = false) LocalDate hasta,
+                                    @RequestParam(required = false) Long vendedorId,
+                                    @RequestParam(required = false) Long cajaId,
+                                    @RequestParam(required = false) Long productoId,
+                                    @RequestParam(required = false) TipoPago tipoPago,
+                                    @RequestParam(required = false) TipoComprobante tipoComprobante) {
+        return reporteService.porCaja(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
     }
 
     @GetMapping("/por-fecha")
     public List<GrupoVenta> porFecha(@RequestParam(required = false) LocalDate desde,
                                      @RequestParam(required = false) LocalDate hasta,
                                      @RequestParam(required = false) Long vendedorId,
+                                     @RequestParam(required = false) Long cajaId,
                                      @RequestParam(required = false) Long productoId,
                                      @RequestParam(required = false) TipoPago tipoPago,
                                      @RequestParam(required = false) TipoComprobante tipoComprobante) {
-        return reporteService.porFecha(toInicio(desde), toFin(hasta), vendedorId, productoId, tipoPago, tipoComprobante);
+        return reporteService.porFecha(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
     }
 
     @GetMapping("/por-tipo-pago")
     public List<GrupoVenta> porTipoPago(@RequestParam(required = false) LocalDate desde,
                                         @RequestParam(required = false) LocalDate hasta,
                                         @RequestParam(required = false) Long vendedorId,
+                                        @RequestParam(required = false) Long cajaId,
                                         @RequestParam(required = false) Long productoId,
                                         @RequestParam(required = false) TipoPago tipoPago,
                                         @RequestParam(required = false) TipoComprobante tipoComprobante) {
-        return reporteService.porTipoPago(toInicio(desde), toFin(hasta), vendedorId, productoId, tipoPago, tipoComprobante);
+        return reporteService.porTipoPago(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
     }
 
     @GetMapping("/por-comprobante")
     public List<GrupoVenta> porTipoComprobante(@RequestParam(required = false) LocalDate desde,
                                                @RequestParam(required = false) LocalDate hasta,
                                                @RequestParam(required = false) Long vendedorId,
+                                               @RequestParam(required = false) Long cajaId,
                                                @RequestParam(required = false) Long productoId,
                                                @RequestParam(required = false) TipoPago tipoPago,
                                                @RequestParam(required = false) TipoComprobante tipoComprobante) {
-        return reporteService.porTipoComprobante(toInicio(desde), toFin(hasta), vendedorId, productoId, tipoPago, tipoComprobante);
+        return reporteService.porTipoComprobante(toInicio(desde), toFin(hasta), vendedorId, cajaId, productoId, tipoPago, tipoComprobante);
+    }
+
+    @GetMapping("/compras")
+    public List<CompraResponse> compras(@RequestParam(required = false) LocalDate desde,
+                                        @RequestParam(required = false) LocalDate hasta) {
+        return reporteService.compras(toInicio(desde), toFin(hasta));
+    }
+
+    @GetMapping("/stock")
+    public List<StockReport> stock() {
+        return reporteService.stock();
     }
 
     @GetMapping("/dashboard")

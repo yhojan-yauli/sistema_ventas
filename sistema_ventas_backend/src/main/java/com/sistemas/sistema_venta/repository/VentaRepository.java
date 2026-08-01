@@ -18,6 +18,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             "v.fecha >= COALESCE(:desde, v.fecha) " +
             "AND v.fecha <= COALESCE(:hasta, v.fecha) " +
             "AND v.vendedor.id = COALESCE(:vendedorId, v.vendedor.id) " +
+            "AND v.sesion.caja.id = COALESCE(:cajaId, v.sesion.caja.id) " +
             "AND v.tipoPago = COALESCE(:tipoPago, v.tipoPago) " +
             "AND v.tipoComprobante = COALESCE(:tipoComprobante, v.tipoComprobante) " +
             "AND (:productoId IS NULL OR v.id IN (SELECT d.venta.id FROM DetalleVenta d WHERE d.producto.id = :productoId))";
@@ -26,6 +27,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             "v.fecha >= COALESCE(:desde, v.fecha) " +
             "AND v.fecha <= COALESCE(:hasta, v.fecha) " +
             "AND v.vendedor.id = COALESCE(:vendedorId, v.vendedor.id) " +
+            "AND v.sesion.caja.id = COALESCE(:cajaId, v.sesion.caja.id) " +
             "AND v.tipoPago = COALESCE(:tipoPago, v.tipoPago) " +
             "AND v.tipoComprobante = COALESCE(:tipoComprobante, v.tipoComprobante) " +
             "AND d.producto.id = COALESCE(:productoId, d.producto.id)";
@@ -53,6 +55,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
             @Param("tipoPago") TipoPago tipoPago,
             @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
             @Param("productoId") Long productoId);
@@ -63,18 +66,22 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
             @Param("tipoPago") TipoPago tipoPago,
             @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
             @Param("productoId") Long productoId);
 
     @Query("SELECT d.producto.id, d.producto.nombre, d.producto.codigo, SUM(d.cantidad), " +
-            "COALESCE(SUM(d.subtotal), 0), COALESCE(SUM((d.precioVenta - d.precioCompra) * d.cantidad - d.descuentoLinea), 0) " +
+            "COALESCE(SUM(d.subtotal), 0), COALESCE(SUM((d.precioVenta - d.precioCompra) * d.cantidad - d.descuentoLinea), 0), " +
+            "d.producto.precioCompra, d.producto.precioVenta, d.producto.ventaPorPeso " +
             "FROM DetalleVenta d JOIN d.venta v WHERE " + FILTROS_DETALLE +
-            " GROUP BY d.producto.id, d.producto.nombre, d.producto.codigo ORDER BY SUM(d.cantidad) DESC")
+            " GROUP BY d.producto.id, d.producto.nombre, d.producto.codigo, d.producto.precioCompra, " +
+            "d.producto.precioVenta, d.producto.ventaPorPeso ORDER BY SUM(d.cantidad) DESC")
     List<Object[]> resumenPorProducto(
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
             @Param("tipoPago") TipoPago tipoPago,
             @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
             @Param("productoId") Long productoId);
@@ -87,6 +94,20 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
+            @Param("tipoPago") TipoPago tipoPago,
+            @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
+            @Param("productoId") Long productoId);
+
+    @Query("SELECT v.sesion.caja.id, v.sesion.caja.nombre, COUNT(v), COALESCE(SUM(v.total), 0), " +
+            "COALESCE(SUM(v.igv), 0), COALESCE(SUM(v.descuento), 0) " +
+            "FROM Venta v WHERE " + FILTROS_VENTA +
+            " GROUP BY v.sesion.caja.id, v.sesion.caja.nombre ORDER BY SUM(v.total) DESC")
+    List<Object[]> resumenPorCaja(
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta,
+            @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
             @Param("tipoPago") TipoPago tipoPago,
             @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
             @Param("productoId") Long productoId);
@@ -98,6 +119,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
             @Param("tipoPago") TipoPago tipoPago,
             @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
             @Param("productoId") Long productoId);
@@ -108,6 +130,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
             @Param("tipoPago") TipoPago tipoPago,
             @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
             @Param("productoId") Long productoId);
@@ -118,6 +141,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             @Param("vendedorId") Long vendedorId,
+            @Param("cajaId") Long cajaId,
             @Param("tipoPago") TipoPago tipoPago,
             @Param("tipoComprobante") com.sistemas.sistema_venta.enums.TipoComprobante tipoComprobante,
             @Param("productoId") Long productoId);

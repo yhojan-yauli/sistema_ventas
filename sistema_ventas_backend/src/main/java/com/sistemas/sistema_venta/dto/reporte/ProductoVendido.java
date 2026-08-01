@@ -8,5 +8,9 @@ public record ProductoVendido(
         String codigo,
         Long cantidad,
         BigDecimal subtotal,
-        BigDecimal ganancia) {
+        BigDecimal ganancia,
+        BigDecimal precioCompra,
+        BigDecimal precioVenta,
+        BigDecimal margen,
+        Boolean ventaPorPeso) {
 }
