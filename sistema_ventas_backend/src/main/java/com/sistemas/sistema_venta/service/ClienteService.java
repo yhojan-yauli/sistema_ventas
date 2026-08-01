@@ -1,6 +1,5 @@
 package com.sistemas.sistema_venta.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.sistemas.sistema_venta.dto.Mapper;
 import com.sistemas.sistema_venta.dto.cliente.ClienteConsultaResponse;
 import com.sistemas.sistema_venta.dto.cliente.ClienteRequest;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,15 +23,14 @@ import java.util.Optional;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
-    private final RestClient restClient;
+    private final RestClient restClient = RestClient.create();
     private final String apisperuUrl;
     private final String apisperuToken;
 
-    public ClienteService(ClienteRepository clienteRepository, RestClient.Builder restClientBuilder,
+    public ClienteService(ClienteRepository clienteRepository,
                           @Value("${apisperu.url}") String apisperuUrl,
                           @Value("${apisperu.token}") String apisperuToken) {
         this.clienteRepository = clienteRepository;
-        this.restClient = restClientBuilder.build();
         this.apisperuUrl = apisperuUrl;
         this.apisperuToken = apisperuToken;
     }
