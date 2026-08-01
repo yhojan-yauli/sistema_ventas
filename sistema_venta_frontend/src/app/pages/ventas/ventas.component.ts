@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { boletaTexto, mailLink, printBoleta, waLink } from '../../core/boleta';
+import { printBoleta } from '../../core/boleta';
 import { ClienteResponse, ConfiguracionResponse, ProductoResponse, SesionResponse, TipoComprobante, TipoPago, VentaResponse } from '../../core/models';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -12,6 +12,7 @@ import { VentaService } from '../../core/services/venta.service';
 import { TIPOS_COMPROBANTE, TIPOS_DOCUMENTO, TIPOS_PAGO, dateTime, errorMessage, money, tipoComprobanteLabel, tipoPagoLabel } from '../../core/utils';
 import { IconComponent } from '../../shared/icon.component';
 import { ComprobanteModalComponent } from '../../shared/comprobante-modal.component';
+import { EnviarCorreoModalComponent } from '../../shared/enviar-correo-modal.component';
 import { ModalComponent, ModalFooterDirective } from '../../shared/modal.component';
 
 interface CartItem {
@@ -29,7 +30,7 @@ interface CartItem {
 @Component({
   selector: 'app-ventas',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, ModalComponent, ModalFooterDirective, ComprobanteModalComponent],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, ModalComponent, ModalFooterDirective, ComprobanteModalComponent, EnviarCorreoModalComponent],
   template: `
     <div class="page pos-page">
       <div class="page-head">
@@ -251,16 +252,13 @@ interface CartItem {
         <button class="btn btn-ghost" (click)="successOpen.set(false)">Cerrar</button>
         @if (lastVenta(); as v) {
           <button class="btn btn-outline" (click)="printVenta(v)"><app-icon name="printer" [size]="15" /> Imprimir</button>
-          @if (waUrl(v)) {
-            <a class="btn btn-outline" [href]="waUrl(v)" target="_blank" rel="noopener"><app-icon name="phone" [size]="15" /> WhatsApp</a>
-          }
-          @if (mailUrl(v)) {
-            <a class="btn btn-outline" [href]="mailUrl(v)" target="_blank" rel="noopener"><app-icon name="mail" [size]="15" /> Email</a>
-          }
+          <button class="btn btn-outline" (click)="abrirCorreo(v)"><app-icon name="mail" [size]="15" /> Email</button>
         }
         <button class="btn btn-primary" (click)="newSale()"><app-icon name="plus" [size]="15" /> Nueva venta</button>
       </div>
     </app-modal>
+
+    <app-enviar-correo-modal [abierto]="correoOpen()" [venta]="correoVenta()" (cerrado)="correoOpen.set(false)" />
 
     <!-- Boletas (historial y reimpresión) -->
     <app-modal [open]="boletasOpen()" (closed)="boletasOpen.set(false)" size="md">
@@ -783,6 +781,8 @@ export class VentasComponent implements OnInit {
   readonly saving = signal(false);
   readonly successOpen = signal(false);
   readonly lastVenta = signal<VentaResponse | null>(null);
+  readonly correoOpen = signal(false);
+  readonly correoVenta = signal<VentaResponse | null>(null);
   readonly boletasOpen = signal(false);
   readonly boletas = signal<VentaResponse[]>([]);
   readonly boletasLoading = signal(false);
@@ -1099,24 +1099,21 @@ export class VentasComponent implements OnInit {
         direccion: '',
         telefono: '',
         email: '',
+        smtpHost: '',
+        smtpPort: '587',
+        smtpUsername: '',
+        smtpPassword: '',
       }
     );
-  }
-
-  ticketText(v: VentaResponse): string {
-    return boletaTexto(v, this.negocioVal());
   }
 
   printVenta(v: VentaResponse) {
     printBoleta(v, this.negocioVal());
   }
 
-  waUrl(v: VentaResponse): string {
-    return waLink(v.clienteTelefono, this.ticketText(v));
-  }
-
-  mailUrl(v: VentaResponse): string {
-    return mailLink(v.clienteEmail, `Boleta ${v.serie}-${String(v.numero).padStart(4, '0')}`, this.ticketText(v));
+  abrirCorreo(v: VentaResponse) {
+    this.correoVenta.set(v);
+    this.correoOpen.set(true);
   }
 
   protected readonly money = money;

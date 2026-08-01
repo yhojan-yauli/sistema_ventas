@@ -199,6 +199,10 @@ export interface ConfiguracionRequest {
   direccion?: string;
   telefono?: string;
   email?: string;
+  smtpHost?: string;
+  smtpPort?: string;
+  smtpUsername?: string;
+  smtpPassword?: string;
 }
 
 export interface ConfiguracionResponse {
@@ -209,6 +213,16 @@ export interface ConfiguracionResponse {
   direccion: string;
   telefono: string;
   email: string;
+  smtpHost: string;
+  smtpPort: string;
+  smtpUsername: string;
+  smtpPassword: string;
+}
+
+export interface EmailRequest {
+  para: string;
+  asunto: string;
+  cuerpo: string;
 }
 
 export interface GastoRequest {

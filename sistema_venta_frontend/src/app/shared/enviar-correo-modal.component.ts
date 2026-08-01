@@ -1,0 +1,136 @@
+import { Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { boletaTexto } from '../core/boleta';
+import { ConfiguracionResponse, VentaResponse } from '../core/models';
+import { ApiService } from '../core/services/api.service';
+import { ToastService } from '../core/services/toast.service';
+import { errorMessage, tipoComprobanteLabel } from '../core/utils';
+import { IconComponent } from './icon.component';
+import { ModalComponent, ModalFooterDirective } from './modal.component';
+
+@Component({
+  selector: 'app-enviar-correo-modal',
+  standalone: true,
+  imports: [ModalComponent, ModalFooterDirective, IconComponent],
+  template: `
+    <app-modal [open]="abierto() && !!venta()" (closed)="cerrado.emit()" size="md">
+      @if (venta(); as v) {
+        <span head>Enviar por correo</span>
+      }
+      @if (venta(); as v) {
+        <div class="em-body">
+          <p class="muted mb-12">
+            Se enviará <b>{{ comprobante(v) }}</b> desde la cuenta configurada en <b>Configuración → Correo</b>.
+          </p>
+          <div class="field mb-12">
+            <label class="label">Para <span class="opt">obligatorio</span></label>
+            <input class="input" type="email" [value]="para()" (input)="para.set($any($event.target).value)" placeholder="cliente@correo.com" />
+          </div>
+          <div class="field mb-12">
+            <label class="label">Asunto</label>
+            <input class="input" [value]="asunto(v)" readonly />
+          </div>
+          <div class="field">
+            <label class="label">Mensaje</label>
+            <textarea class="textarea" rows="8" [value]="cuerpo(v)" readonly></textarea>
+          </div>
+        </div>
+      }
+      @if (venta(); as v) {
+        <div foot>
+          <button class="btn btn-ghost" (click)="cerrado.emit()">Cancelar</button>
+          <button class="btn btn-primary" [disabled]="sending() || !para().trim()" (click)="enviar(v)">
+            @if (sending()) { <span class="spinner"></span> Enviando… } @else { <app-icon name="mail" [size]="15" /> Enviar }
+          </button>
+        </div>
+      }
+    </app-modal>
+  `,
+  styles: [
+    `
+      .em-body {
+        display: flex;
+        flex-direction: column;
+      }
+      .mb-12 {
+        margin-bottom: 12px;
+      }
+    `,
+  ],
+})
+export class EnviarCorreoModalComponent {
+  readonly abierto = input(false);
+  readonly venta = input<VentaResponse | null>(null);
+  readonly cerrado = output();
+
+  private readonly api = inject(ApiService);
+  private readonly toast = inject(ToastService);
+  private readonly destroy = inject(DestroyRef);
+
+  readonly sending = signal(false);
+  readonly para = signal('');
+  private readonly negocio = signal<ConfiguracionResponse | null>(null);
+
+  constructor() {
+    this.api
+      .configuracion()
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe((c) => this.negocio.set(c));
+
+    effect(() => {
+      if (this.abierto()) {
+        this.para.set(this.venta()?.clienteEmail ?? '');
+      }
+    });
+  }
+
+  private negocioVal(): ConfiguracionResponse {
+    return (
+      this.negocio() ?? {
+        igvPorcentaje: 18,
+        precioIncluyeIGV: true,
+        razonSocial: '',
+        ruc: '',
+        direccion: '',
+        telefono: '',
+        email: '',
+        smtpHost: '',
+        smtpPort: '587',
+        smtpUsername: '',
+        smtpPassword: '',
+      }
+    );
+  }
+
+  comprobante(v: VentaResponse): string {
+    return `${v.serie}-${String(v.numero).padStart(4, '0')}`;
+  }
+
+  asunto(v: VentaResponse): string {
+    return `${tipoComprobanteLabel(v.tipoComprobante)} ${this.comprobante(v)}`;
+  }
+
+  cuerpo(v: VentaResponse): string {
+    return boletaTexto(v, this.negocioVal());
+  }
+
+  enviar(v: VentaResponse) {
+    const para = this.para().trim();
+    if (!para || this.sending()) return;
+    this.sending.set(true);
+    this.api
+      .enviarCorreo({ para, asunto: this.asunto(v), cuerpo: this.cuerpo(v) })
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe({
+        next: () => {
+          this.sending.set(false);
+          this.toast.success('Correo enviado');
+          this.cerrado.emit();
+        },
+        error: (e) => {
+          this.sending.set(false);
+          this.toast.error(errorMessage(e));
+        },
+      });
+  }
+}

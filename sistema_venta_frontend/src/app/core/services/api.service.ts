@@ -13,6 +13,7 @@ import {
   CompraResponse,
   ConfiguracionRequest,
   ConfiguracionResponse,
+  EmailRequest,
   MovimientoStockResponse,
   ProductoRequest,
   ProductoResponse,
@@ -132,5 +133,10 @@ export class ApiService {
   }
   actualizarConfiguracion(body: ConfiguracionRequest): Observable<ConfiguracionResponse> {
     return this.http.put<ConfiguracionResponse>(`${environment.apiUrl}/configuracion`, body);
+  }
+
+  // ---------- Notificaciones ----------
+  enviarCorreo(body: EmailRequest): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/notificaciones/email`, body);
   }
 }
