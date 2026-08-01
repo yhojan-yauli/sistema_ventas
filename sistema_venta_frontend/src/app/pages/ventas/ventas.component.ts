@@ -11,6 +11,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { VentaService } from '../../core/services/venta.service';
 import { TIPOS_COMPROBANTE, TIPOS_DOCUMENTO, TIPOS_PAGO, dateTime, errorMessage, money, tipoComprobanteLabel, tipoPagoLabel } from '../../core/utils';
 import { IconComponent } from '../../shared/icon.component';
+import { ComprobanteModalComponent } from '../../shared/comprobante-modal.component';
 import { ModalComponent, ModalFooterDirective } from '../../shared/modal.component';
 
 interface CartItem {
@@ -28,7 +29,7 @@ interface CartItem {
 @Component({
   selector: 'app-ventas',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, ModalComponent, ModalFooterDirective],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, ModalComponent, ModalFooterDirective, ComprobanteModalComponent],
   template: `
     <div class="page pos-page">
       <div class="page-head">
@@ -278,19 +279,17 @@ interface CartItem {
                 <small>{{ v.clienteNombre ?? 'Cliente mostrador' }} · <b>{{ money(v.total) }}</b></small>
               </div>
               <div class="boleta-actions">
+                <button class="btn btn-outline" title="Ver detalle" (click)="verBoleta(v)"><app-icon name="eye" [size]="15" /> Ver</button>
                 <button class="btn btn-outline" title="Imprimir boleta" (click)="printVenta(v)"><app-icon name="printer" [size]="15" /> Imprimir</button>
-                @if (waUrl(v)) {
-                  <a class="btn btn-outline" title="Enviar por WhatsApp" [href]="waUrl(v)" target="_blank" rel="noopener"><app-icon name="phone" [size]="15" /></a>
-                }
-                @if (mailUrl(v)) {
-                  <a class="btn btn-outline" title="Enviar por correo" [href]="mailUrl(v)" target="_blank" rel="noopener"><app-icon name="mail" [size]="15" /></a>
-                }
               </div>
             </div>
           }
         }
       </div>
     </app-modal>
+
+    <!-- Ver comprobante -->
+    <app-comprobante-modal [open]="detalleOpen()" [venta]="detalleVenta()" (closed)="detalleOpen.set(false)" />
   `,
   styles: [
     `
@@ -787,6 +786,8 @@ export class VentasComponent implements OnInit {
   readonly boletasOpen = signal(false);
   readonly boletas = signal<VentaResponse[]>([]);
   readonly boletasLoading = signal(false);
+  readonly detalleOpen = signal(false);
+  readonly detalleVenta = signal<VentaResponse | null>(null);
   private readonly negocio = signal<ConfiguracionResponse | null>(null);
 
   readonly clienteQ = signal('');
@@ -1066,6 +1067,11 @@ export class VentasComponent implements OnInit {
   openBoletas() {
     this.boletasOpen.set(true);
     this.loadBoletas();
+  }
+
+  verBoleta(v: VentaResponse) {
+    this.detalleVenta.set(v);
+    this.detalleOpen.set(true);
   }
 
   loadBoletas() {

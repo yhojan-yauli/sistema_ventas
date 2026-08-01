@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { path: 'clientes', label: 'Clientes', icon: 'users' },
   { path: 'categorias', label: 'Categorías', icon: 'tag', adminOnly: true },
   { path: 'reportes', label: 'Reportes', icon: 'chart', adminOnly: true },
+  { path: 'historial', label: 'Historial', icon: 'history', adminOnly: true },
   { path: 'cajas', label: 'Cajas', icon: 'wallet', adminOnly: true },
   { path: 'movimientos', label: 'Movimientos', icon: 'history', adminOnly: true },
   { path: 'usuarios', label: 'Usuarios', icon: 'user', adminOnly: true },
