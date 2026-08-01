@@ -7,6 +7,7 @@ import { CajaService } from '../../core/services/caja.service';
 import { ConfirmService } from '../../core/services/confirm.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TIPOS_PAGO, dateTime, errorMessage, money, tipoPagoLabel } from '../../core/utils';
+import { ComprobanteModalComponent } from '../../shared/comprobante-modal.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent, ModalFooterDirective } from '../../shared/modal.component';
 
@@ -18,7 +19,7 @@ interface MetodoEsperado {
 @Component({
   selector: 'app-caja',
   standalone: true,
-  imports: [ReactiveFormsModule, IconComponent, ModalComponent, ModalFooterDirective],
+  imports: [ReactiveFormsModule, IconComponent, ModalComponent, ModalFooterDirective, ComprobanteModalComponent],
   template: `
     @if (loading()) {
       <div class="page"><div class="loading-block"><app-icon name="refresh" [size]="26" /></div></div>
@@ -92,6 +93,7 @@ interface MetodoEsperado {
                     <th>Comprobante</th>
                     <th>Cliente</th>
                     <th class="right">Total</th>
+                    <th class="right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -100,10 +102,15 @@ interface MetodoEsperado {
                       <td><span class="code">{{ v.serie }}-{{ v.numero }}</span></td>
                       <td>{{ v.clienteNombre ?? 'Consumidor final' }}</td>
                       <td class="num">{{ money(v.total) }}</td>
+                      <td class="right">
+                        <div class="actions">
+                          <button class="btn btn-ghost btn-xs" (click)="verVenta(v)"><app-icon name="eye" [size]="14" /> Ver</button>
+                        </div>
+                      </td>
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="3"><div class="empty-state"><app-icon name="cart" [size]="30" /><p>Sin ventas en esta sesión</p></div></td>
+                      <td colspan="4"><div class="empty-state"><app-icon name="cart" [size]="30" /><p>Sin ventas en esta sesión</p></div></td>
                     </tr>
                   }
                 </tbody>
@@ -300,6 +307,9 @@ interface MetodoEsperado {
         </button>
       </div>
     </app-modal>
+
+    <!-- Ver comprobante -->
+    <app-comprobante-modal [open]="detalleOpen()" [venta]="detalleVenta()" (closed)="detalleOpen.set(false)" />
   `,
   styles: [
     `
@@ -582,6 +592,8 @@ export class CajaComponent implements OnInit {
   readonly cierreOpen = signal(false);
   readonly opening = signal(false);
   readonly closing = signal(false);
+  readonly detalleOpen = signal(false);
+  readonly detalleVenta = signal<VentaResponse | null>(null);
 
   readonly TIPOS_PAGO = TIPOS_PAGO;
   private readonly METODOS: TipoPago[] = TIPOS_PAGO.map((t) => t.value as TipoPago);
@@ -669,6 +681,11 @@ export class CajaComponent implements OnInit {
       .ventasPorSesion(sesionId)
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe((vs) => this.ventas.set(vs));
+  }
+
+  verVenta(v: VentaResponse) {
+    this.detalleVenta.set(v);
+    this.detalleOpen.set(true);
   }
 
   abrir() {
