@@ -3,9 +3,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  CompraResponse,
   DashboardResponse,
   GrupoVenta,
   ProductoVendido,
+  StockReport,
   TipoComprobante,
   TipoPago,
   VentaResumen,
@@ -16,6 +18,7 @@ export interface ReporteFiltros {
   desde?: string | null;
   hasta?: string | null;
   vendedorId?: number | null;
+  cajaId?: number | null;
   productoId?: number | null;
   tipoPago?: TipoPago | null;
   tipoComprobante?: TipoComprobante | null;
@@ -33,6 +36,7 @@ export class ReporteService {
     set('desde', f.desde);
     set('hasta', f.hasta);
     set('vendedorId', f.vendedorId);
+    set('cajaId', f.cajaId);
     set('productoId', f.productoId);
     set('tipoPago', f.tipoPago);
     set('tipoComprobante', f.tipoComprobante);
@@ -51,6 +55,9 @@ export class ReporteService {
   porVendedor(f: ReporteFiltros = {}): Observable<GrupoVenta[]> {
     return this.http.get<GrupoVenta[]>(`${environment.apiUrl}/reportes/por-vendedor`, { params: this.params(f) });
   }
+  porCaja(f: ReporteFiltros = {}): Observable<GrupoVenta[]> {
+    return this.http.get<GrupoVenta[]>(`${environment.apiUrl}/reportes/por-caja`, { params: this.params(f) });
+  }
   porFecha(f: ReporteFiltros = {}): Observable<GrupoVenta[]> {
     return this.http.get<GrupoVenta[]>(`${environment.apiUrl}/reportes/por-fecha`, { params: this.params(f) });
   }
@@ -59,6 +66,12 @@ export class ReporteService {
   }
   porComprobante(f: ReporteFiltros = {}): Observable<GrupoVenta[]> {
     return this.http.get<GrupoVenta[]>(`${environment.apiUrl}/reportes/por-comprobante`, { params: this.params(f) });
+  }
+  compras(f: ReporteFiltros = {}): Observable<CompraResponse[]> {
+    return this.http.get<CompraResponse[]>(`${environment.apiUrl}/reportes/compras`, { params: this.params(f) });
+  }
+  stock(): Observable<StockReport[]> {
+    return this.http.get<StockReport[]>(`${environment.apiUrl}/reportes/stock`);
   }
   dashboard(): Observable<DashboardResponse> {
     return this.http.get<DashboardResponse>(`${environment.apiUrl}/reportes/dashboard`);

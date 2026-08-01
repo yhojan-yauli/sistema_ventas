@@ -19,6 +19,8 @@ interface CartItem {
   incluyeIGV: boolean;
   stock: number;
   cantidad: number;
+  ventaPorPeso: boolean;
+  pesoGramos: number | null;
 }
 
 @Component({
@@ -65,10 +67,13 @@ interface CartItem {
                 <button class="prod-tile" [class.out]="p.stock === 0" (click)="addToCart(p)">
                   <span class="prod-tile-code">{{ p.codigo ?? '—' }}</span>
                   <b>{{ p.nombre }}</b>
+                  @if (p.ventaPorPeso) {
+                    <small class="prod-tile-peso">{{ p.pesoGramos }} g por porción</small>
+                  }
                   <div class="prod-tile-foot">
-                    <span class="money">{{ money(p.precioVenta) }}</span>
+                    <span class="money">{{ money(precioPorcion(p)) }}</span>
                     <span class="badge" [class.badge-danger]="p.stock === 0" [class.badge-warning]="p.stock > 0 && p.stock <= p.stockMinimo" [class.badge-success]="p.stock > p.stockMinimo">
-                      {{ p.stock }} uds.
+                      {{ p.stock }} {{ p.ventaPorPeso ? 'porc.' : 'uds.' }}
                     </span>
                   </div>
                 </button>
@@ -91,7 +96,13 @@ interface CartItem {
                   <div class="cart-item">
                     <div class="cart-item-info">
                       <b>{{ item.nombre }}</b>
-                      <small>{{ money(item.precio) }} c/u · {{ item.stock }} disponibles</small>
+                      <small>
+                        @if (item.ventaPorPeso) {
+                          {{ money(item.precio) }} / porción · {{ item.pesoGramos }} g · {{ item.stock }} disponibles
+                        } @else {
+                          {{ money(item.precio) }} c/u · {{ item.stock }} disponibles
+                        }
+                      </small>
                     </div>
                     <div class="cart-qty">
                       <button class="qty-btn" (click)="dec(item)">−</button>
@@ -327,6 +338,11 @@ interface CartItem {
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+      }
+      .prod-tile-peso {
+        font-size: 11px;
+        color: var(--brand);
+        font-weight: 700;
       }
       .prod-tile-foot {
         width: 100%;
@@ -757,8 +773,28 @@ export class VentasComponent implements OnInit {
         }
         return items.map((i) => (i.productoId === p.id ? { ...i, cantidad: i.cantidad + 1 } : i));
       }
-      return [...items, { productoId: p.id, nombre: p.nombre, codigo: p.codigo, precio: p.precioVenta, incluyeIGV: p.incluyeIGV, stock: p.stock, cantidad: 1 }];
+      return [
+        ...items,
+        {
+          productoId: p.id,
+          nombre: p.nombre,
+          codigo: p.codigo,
+          precio: this.precioPorcion(p),
+          incluyeIGV: p.incluyeIGV,
+          stock: p.stock,
+          cantidad: 1,
+          ventaPorPeso: p.ventaPorPeso,
+          pesoGramos: p.pesoGramos,
+        },
+      ];
     });
+  }
+
+  precioPorcion(p: ProductoResponse): number {
+    if (p.ventaPorPeso && p.pesoGramos && p.pesoGramos > 0) {
+      return Math.round((p.precioVenta * p.pesoGramos * 100) / 1000) / 100;
+    }
+    return p.precioVenta;
   }
 
   inc(item: CartItem) {

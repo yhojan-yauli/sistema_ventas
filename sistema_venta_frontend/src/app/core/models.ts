@@ -78,6 +78,8 @@ export interface ProductoRequest {
   incluyeIGV?: boolean;
   stock?: number;
   stockMinimo?: number;
+  ventaPorPeso?: boolean;
+  pesoGramos?: number | null;
   activo?: boolean;
 }
 
@@ -93,6 +95,8 @@ export interface ProductoResponse {
   incluyeIGV: boolean;
   stock: number;
   stockMinimo: number;
+  ventaPorPeso: boolean;
+  pesoGramos: number | null;
   activo: boolean;
 }
 
@@ -286,6 +290,7 @@ export interface ItemVentaResponse {
   cantidad: number;
   precioVenta: number;
   precioCompra: number;
+  pesoGramos: number | null;
   descuentoLinea: number;
   subtotal: number;
   ganancia: number;
@@ -303,6 +308,8 @@ export interface VentaRequest {
 export interface VentaResponse {
   id: number;
   sesionId: number;
+  cajaId: number;
+  cajaNombre: string;
   vendedorId: number;
   vendedorNombre: string;
   clienteId: number | null;
@@ -346,6 +353,26 @@ export interface ProductoVendido {
   cantidad: number;
   subtotal: number;
   ganancia: number;
+  precioCompra: number;
+  precioVenta: number;
+  margen: number | null;
+  ventaPorPeso: boolean;
+}
+
+export interface StockReport {
+  id: number;
+  codigo: string | null;
+  nombre: string;
+  categoriaNombre: string | null;
+  stock: number;
+  stockMinimo: number;
+  precioCompra: number;
+  precioVenta: number;
+  ventaPorPeso: boolean;
+  pesoGramos: number | null;
+  costoInventario: number;
+  ventaInventario: number;
+  margen: number | null;
 }
 
 export interface VentaResumen {

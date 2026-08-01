@@ -57,7 +57,12 @@ import { ModalComponent, ModalFooterDirective } from '../../shared/modal.compone
                     <div class="prod-name">
                       <span class="avatar soft">{{ p.nombre.charAt(0) }}</span>
                       <div>
-                        <b>{{ p.nombre }}</b>
+                        <b>
+                          {{ p.nombre }}
+                          @if (p.ventaPorPeso) {
+                            <span class="badge badge-neutral">{{ p.pesoGramos }} g</span>
+                          }
+                        </b>
                         @if (p.descripcion) {
                           <small>{{ p.descripcion }}</small>
                         }
@@ -134,13 +139,20 @@ import { ModalComponent, ModalFooterDirective } from '../../shared/modal.compone
             <textarea class="textarea" formControlName="descripcion" rows="2" placeholder="Detalle breve del producto"></textarea>
           </div>
           <div class="field">
-            <label class="label">Precio de compra (S/)</label>
+            <label class="label">{{ form.controls.ventaPorPeso.value ? 'Precio de compra (por kg, S/)' : 'Precio de compra (S/)' }}</label>
             <input class="input" type="number" step="0.01" min="0" formControlName="precioCompra" />
           </div>
           <div class="field">
-            <label class="label">Precio de venta (S/)</label>
+            <label class="label">{{ form.controls.ventaPorPeso.value ? 'Precio de venta (por kg, S/)' : 'Precio de venta (S/)' }}</label>
             <input class="input" type="number" step="0.01" min="0" formControlName="precioVenta" />
           </div>
+          @if (form.controls.ventaPorPeso.value) {
+            <div class="field">
+              <label class="label">Peso de cada porción (gramos)</label>
+              <input class="input" type="number" min="1" formControlName="pesoGramos" placeholder="Ej. 499" />
+              <span class="field-hint">Se calcula el precio/costo por porción automáticamente</span>
+            </div>
+          }
           <div class="field">
             <label class="label">Stock inicial</label>
             <input class="input" type="number" min="0" formControlName="stock" />
@@ -148,6 +160,16 @@ import { ModalComponent, ModalFooterDirective } from '../../shared/modal.compone
           <div class="field">
             <label class="label">Stock mínimo</label>
             <input class="input" type="number" min="0" formControlName="stockMinimo" />
+          </div>
+          <div class="switch-row full">
+            <label class="switch">
+              <input type="checkbox" formControlName="ventaPorPeso" />
+              <span class="track"></span>
+            </label>
+            <div>
+              <b>Venta por peso (kilos)</b>
+              <small>Ej. filetes: compras la carne por kilo y vendes por porción</small>
+            </div>
           </div>
           <div class="switch-row full">
             <label class="switch">
@@ -295,6 +317,11 @@ import { ModalComponent, ModalFooterDirective } from '../../shared/modal.compone
         color: var(--text-faint);
         font-size: 12px;
       }
+      .field-hint {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        margin-top: 4px;
+      }
     `,
   ],
 })
@@ -332,6 +359,8 @@ export class ProductosComponent implements OnInit {
     precioVenta: [0, [Validators.required, Validators.min(0)]],
     stock: [0],
     stockMinimo: [0],
+    ventaPorPeso: [false],
+    pesoGramos: [null as number | null],
     incluyeIGV: [true],
   });
 
@@ -374,6 +403,8 @@ export class ProductosComponent implements OnInit {
       precioVenta: p?.precioVenta ?? 0,
       stock: p?.stock ?? 0,
       stockMinimo: p?.stockMinimo ?? 0,
+      ventaPorPeso: p?.ventaPorPeso ?? false,
+      pesoGramos: p?.pesoGramos ?? null,
       incluyeIGV: p?.incluyeIGV ?? true,
     });
     this.formOpen.set(true);
@@ -389,6 +420,10 @@ export class ProductosComponent implements OnInit {
       return;
     }
     const v = this.form.getRawValue();
+    if (v.ventaPorPeso && !v.pesoGramos) {
+      this.toast.warning('Indica el peso de cada porción en gramos');
+      return;
+    }
     const body = {
       codigo: v.codigo || undefined,
       nombre: v.nombre,
@@ -399,6 +434,8 @@ export class ProductosComponent implements OnInit {
       incluyeIGV: v.incluyeIGV,
       stock: v.stock,
       stockMinimo: v.stockMinimo,
+      ventaPorPeso: v.ventaPorPeso,
+      pesoGramos: v.ventaPorPeso ? v.pesoGramos : null,
       activo: true,
     };
     this.saving.set(true);
