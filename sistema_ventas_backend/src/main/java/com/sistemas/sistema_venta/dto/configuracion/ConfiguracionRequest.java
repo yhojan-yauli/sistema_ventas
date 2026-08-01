@@ -12,5 +12,9 @@ public record ConfiguracionRequest(
         String ruc,
         String direccion,
         String telefono,
-        String email) {
+        String email,
+        String smtpHost,
+        String smtpPort,
+        String smtpUsername,
+        String smtpPassword) {
 }
