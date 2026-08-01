@@ -787,3 +787,28 @@ table.tbl {
 .span-all {
   grid-column: 1 / -1;
 }
+
+@media print {
+  .no-print,
+  .sidebar,
+  .topbar {
+    display: none !important;
+  }
+  .main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  .layout {
+    height: auto !important;
+  }
+  body,
+  .main {
+    background: #fff !important;
+  }
+  .panel,
+  .tbl,
+  .stat-card {
+    border-color: #ccc !important;
+    box-shadow: none !important;
+  }
+}

@@ -7,6 +7,7 @@ import {
   CategoriaRequest,
   CategoriaResponse,
   ClienteRequest,
+  ClienteConsultaResponse,
   ClienteResponse,
   CompraRequest,
   CompraResponse,
@@ -17,6 +18,7 @@ import {
   ProductoResponse,
   ProveedorRequest,
   ProveedorResponse,
+  TipoDocumento,
   UsuarioRequest,
   UsuarioResponse,
 } from '../models';
@@ -88,6 +90,12 @@ export class ApiService {
   }
   crearCliente(body: ClienteRequest): Observable<ClienteResponse> {
     return this.http.post<ClienteResponse>(`${environment.apiUrl}/clientes`, body);
+  }
+
+  consultarCliente(tipo: TipoDocumento, numero: string): Observable<ClienteConsultaResponse> {
+    return this.http.get<ClienteConsultaResponse>(`${environment.apiUrl}/clientes/buscar-consulta`, {
+      params: { tipo, numero },
+    });
   }
   actualizarCliente(id: number, body: ClienteRequest): Observable<ClienteResponse> {
     return this.http.put<ClienteResponse>(`${environment.apiUrl}/clientes/${id}`, body);

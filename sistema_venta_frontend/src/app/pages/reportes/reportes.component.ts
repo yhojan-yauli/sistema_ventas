@@ -21,9 +21,12 @@ type Tab = 'ventas' | 'productos' | 'fechas' | 'vendedores' | 'cajas' | 'pagos' 
           <h1 class="page-title">Reportes</h1>
           <p class="page-sub">Ventas, compras, márgenes y stock de cada caja</p>
         </div>
+        <div class="page-actions no-print">
+          <button class="btn btn-soft" (click)="imprimir()"><app-icon name="printer" [size]="16" /> Imprimir</button>
+        </div>
       </div>
 
-      <div class="filters">
+      <div class="filters no-print">
         <div class="filter-grid">
           <div class="field">
             <label class="label">Desde</label>
@@ -106,7 +109,7 @@ type Tab = 'ventas' | 'productos' | 'fechas' | 'vendedores' | 'cajas' | 'pagos' 
         </div>
       }
 
-      <div class="tabs">
+      <div class="tabs no-print">
         <button class="tab" [class.on]="tab() === 'ventas'" (click)="tab.set('ventas')">Ventas</button>
         <button class="tab" [class.on]="tab() === 'productos'" (click)="tab.set('productos')">Por producto</button>
         <button class="tab" [class.on]="tab() === 'cajas'" (click)="tab.set('cajas')">Por caja</button>
@@ -569,6 +572,10 @@ export class ReportesComponent implements OnInit {
   clear() {
     this.form.reset({ desde: '', hasta: '', cajaId: null, vendedorId: null, productoId: null, tipoPago: null, tipoComprobante: null });
     this.apply();
+  }
+
+  imprimir() {
+    window.print();
   }
 
   pct(g: GrupoVenta, list: GrupoVenta[]): number {

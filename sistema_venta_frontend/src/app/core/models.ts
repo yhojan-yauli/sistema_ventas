@@ -150,6 +150,16 @@ export interface ClienteResponse {
   email: string | null;
 }
 
+export interface ClienteConsultaResponse {
+  tipoDocumento: TipoDocumento;
+  numeroDocumento: string;
+  razonSocial: string;
+  telefono: string | null;
+  direccion: string | null;
+  email: string | null;
+  local: boolean;
+}
+
 export interface ItemCompraRequest {
   productoId: number;
   cantidad: number;

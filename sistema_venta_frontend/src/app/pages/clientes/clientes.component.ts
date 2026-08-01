@@ -92,7 +92,16 @@ import { ModalComponent, ModalFooterDirective } from '../../shared/modal.compone
           </div>
           <div class="field">
             <label class="label">Número <span class="opt">obligatorio</span></label>
-            <input class="input" formControlName="numeroDocumento" placeholder="Ej. 70123456" />
+            <div class="doc-row">
+              <input class="input" formControlName="numeroDocumento" placeholder="Ej. 70123456" (blur)="onNumeroBlur()" />
+              <button type="button" class="btn btn-soft" (click)="consultar()" [disabled]="buscando()">
+                <app-icon name="search" [size]="15" />
+                {{ buscando() ? 'Consultando…' : 'Buscar' }}
+              </button>
+            </div>
+            @if (consultaOrigen(); as origen) {
+              <span class="consulta-hint"><app-icon name="check" [size]="13" /> {{ origen }}</span>
+            }
             @if (form.controls.numeroDocumento.touched && form.controls.numeroDocumento.invalid) {
               <span class="field-err">El número es obligatorio</span>
             }
@@ -145,6 +154,24 @@ import { ModalComponent, ModalFooterDirective } from '../../shared/modal.compone
         border-color: var(--brand);
         background: var(--brand-softer);
       }
+      .doc-row {
+        display: flex;
+        gap: 8px;
+      }
+      .doc-row .input {
+        flex: 1;
+      }
+      .doc-row .btn {
+        white-space: nowrap;
+      }
+      .consulta-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--success, #16a34a);
+      }
     `,
   ],
 })
@@ -159,6 +186,8 @@ export class ClientesComponent implements OnInit {
   readonly q = signal('');
   readonly formOpen = signal(false);
   readonly editando = signal(false);
+  readonly buscando = signal(false);
+  readonly consultaOrigen = signal<string | null>(null);
   private editingId: number | null = null;
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -194,7 +223,53 @@ export class ClientesComponent implements OnInit {
       email: c?.email ?? '',
       direccion: c?.direccion ?? '',
     });
+    this.consultaOrigen.set(null);
     this.formOpen.set(true);
+  }
+
+  consultar() {
+    const tipo = this.form.controls.tipoDocumento.value as TipoDocumento;
+    const numero = (this.form.controls.numeroDocumento.value || '').replace(/\D/g, '');
+    if (tipo !== 'DNI' && tipo !== 'RUC') {
+      this.toast.warning('Solo se puede consultar un DNI o RUC');
+      return;
+    }
+    const esperado = tipo === 'DNI' ? 8 : 11;
+    if (numero.length !== esperado) {
+      this.toast.warning(tipo === 'DNI' ? 'El DNI debe tener 8 dígitos' : 'El RUC debe tener 11 dígitos');
+      return;
+    }
+    this.buscando.set(true);
+    this.api
+      .consultarCliente(tipo, numero)
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe({
+        next: (r) => {
+          this.buscando.set(false);
+          this.form.patchValue({
+            razonSocial: r.razonSocial,
+            telefono: r.telefono ?? '',
+            direccion: r.direccion ?? '',
+            email: r.email ?? '',
+          });
+          this.consultaOrigen.set(r.local ? 'Encontrado en tu base de datos' : 'Datos obtenidos de RENIEC/SUNAT');
+          this.toast.success(r.local ? 'Cliente encontrado en tu base de datos' : 'Datos del documento cargados');
+        },
+        error: (e) => {
+          this.buscando.set(false);
+          this.toast.error(errorMessage(e));
+        },
+      });
+  }
+
+  onNumeroBlur() {
+    if (this.editingId) return;
+    const tipo = this.form.controls.tipoDocumento.value as TipoDocumento;
+    const numero = (this.form.controls.numeroDocumento.value || '').replace(/\D/g, '');
+    const esperado = tipo === 'DNI' ? 8 : tipo === 'RUC' ? 11 : 0;
+    if (numero.length === esperado) {
+      this.consultar();
+    }
   }
 
   closeForm() {
