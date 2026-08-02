@@ -22,7 +22,7 @@ public class NotificacionController {
 
     @PostMapping("/email")
     public Map<String, String> enviarCorreo(@Valid @RequestBody EmailRequest request) {
-        notificacionService.enviarCorreo(request.para(), request.asunto(), request.cuerpo());
+        notificacionService.enviarCorreo(request.para(), request.asunto(), request.cuerpo(), request.ventaId());
         return Map.of("mensaje", "Correo enviado");
     }
 }
