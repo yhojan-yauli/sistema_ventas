@@ -234,6 +234,23 @@ Con el backend en ejecución, la documentación interactiva (Swagger) está disp
 
 ---
 
+## 🤝 ¿Te interesa este sistema?
+
+Este sistema está hecho para **todo tipo de negocio**: bodegas, restaurantes, farmacias, ferreterías, tiendas de ropa, bazares, servicios y muchos más. Si quieres **adquirir el sistema** para tu negocio o necesitas un **desarrollo a medida**, escríbeme y lo hacemos realidad.
+
+📩 **Correo:** `1433yhojanyauli@gmail.com`
+📱 **WhatsApp / Teléfono:** `978 318 081`
+
+**¿Qué ofrezco?**
+
+- 🛒 **Implementación completa** del sistema en tu negocio (instalación, configuración y capacitación).
+- 🧩 **Sistemas a medida** adaptados a tu rubro y forma de trabajar.
+- 🔧 **Soporte y mejoras** continuas según tu negocio crezca.
+
+> 💬 Respondo rápido por correo o WhatsApp. ¡Hablemos de tu proyecto!
+
+---
+
 <div align="center">
-  <sub>Hecho con ❤️ para emprendedores y tiendas de barrio.</sub>
+  <sub>Un sistema pensado para todo tipo de negocio — de la tienda del barrio a la empresa en crecimiento 🚀</sub>
 </div>
