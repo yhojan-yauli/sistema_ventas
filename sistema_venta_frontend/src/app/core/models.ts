@@ -222,7 +222,8 @@ export interface ConfiguracionResponse {
 export interface EmailRequest {
   para: string;
   asunto: string;
-  cuerpo: string;
+  cuerpo?: string | null;
+  ventaId?: number | null;
 }
 
 export interface GastoRequest {

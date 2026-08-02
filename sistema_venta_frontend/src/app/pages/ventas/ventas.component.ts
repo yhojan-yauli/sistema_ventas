@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { printBoleta } from '../../core/boleta';
-import { ClienteResponse, ConfiguracionResponse, ProductoResponse, SesionResponse, TipoComprobante, TipoPago, VentaResponse } from '../../core/models';
+import { ClienteConsultaResponse, ClienteRequest, ClienteResponse, ConfiguracionResponse, ProductoResponse, SesionResponse, TipoComprobante, TipoDocumento, TipoPago, VentaResponse } from '../../core/models';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CajaService } from '../../core/services/caja.service';
@@ -25,6 +25,13 @@ interface CartItem {
   cantidad: number;
   ventaPorPeso: boolean;
   pesoGramos: number | null;
+}
+
+function documentoCompleto(value: string): { tipo: TipoDocumento; numero: string } | null {
+  const v = value.trim();
+  if (/^\d{8}$/.test(v)) return { tipo: 'DNI', numero: v };
+  if (/^\d{11}$/.test(v)) return { tipo: 'RUC', numero: v };
+  return null;
 }
 
 @Component({
@@ -155,10 +162,24 @@ interface CartItem {
                       }
                     </div>
                   }
+                  @if (consultaResult(); as r) {
+                    <div class="client-drop">
+                      <button class="client-opt" (click)="selectClienteNuevo(r)">
+                        <b>{{ r.razonSocial }}</b>
+                        <small>{{ r.tipoDocumento }} {{ r.numeroDocumento }} · Datos en línea</small>
+                      </button>
+                    </div>
+                  }
                   @if (cliente(); as c) {
                     <div class="client-picked">
                       <span>{{ c.razonSocial }} · {{ c.numeroDocumento }}</span>
                       <button (click)="clearCliente()"><app-icon name="x" [size]="13" /></button>
+                    </div>
+                  }
+                  @if (!cliente() && clienteNuevo(); as cn) {
+                    <div class="client-picked">
+                      <span>{{ cn.razonSocial }} · {{ cn.numeroDocumento }} · En línea</span>
+                      <button (click)="clearClienteNuevo()"><app-icon name="x" [size]="13" /></button>
                     </div>
                   }
                 </div>
@@ -223,7 +244,12 @@ interface CartItem {
           </div>
           <div class="field">
             <label class="label">Número <span class="opt">obligatorio</span></label>
-            <input class="input" formControlName="numeroDocumento" placeholder="Ej. 70123456" />
+            <div class="client-sel">
+              <input class="input" formControlName="numeroDocumento" placeholder="Ej. 70123456" />
+              <button class="icon-action" type="button" [disabled]="buscandoNuevo()" (click)="consultarNuevo()" title="Buscar en línea">
+                @if (buscandoNuevo()) { <span class="spinner"></span> } @else { <app-icon name="search" [size]="15" /> }
+              </button>
+            </div>
           </div>
           <div class="field full">
             <label class="label">Razón social / Nombre <span class="opt">obligatorio</span></label>
@@ -792,8 +818,11 @@ export class VentasComponent implements OnInit {
 
   readonly clienteQ = signal('');
   readonly clienteResults = signal<ClienteResponse[]>([]);
+  readonly consultaResult = signal<ClienteConsultaResponse | null>(null);
   readonly cliente = signal<ClienteResponse | null>(null);
+  readonly clienteNuevo = signal<ClienteRequest | null>(null);
   readonly clienteOpen = signal(false);
+  readonly buscandoNuevo = signal(false);
 
   igvTasa = 18;
   private precioIncluyeIGV = true;
@@ -960,23 +989,62 @@ export class VentasComponent implements OnInit {
 
   onClienteSearch(value: string) {
     this.clienteQ.set(value);
+    this.consultaResult.set(null);
     if (this.searchTimer) clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => {
-      this.api
-        .clientes(value)
-        .pipe(takeUntilDestroyed(this.destroy))
-        .subscribe((cs) => this.clienteResults.set(cs.slice(0, 6)));
-    }, 300);
+    this.searchTimer = setTimeout(() => this.buscarClientes(value), 300);
+  }
+
+  private buscarClientes(value: string) {
+    const doc = documentoCompleto(value);
+    this.api
+      .clientes(value)
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe((cs) => {
+        this.clienteResults.set(cs.slice(0, 6));
+        if (cs.length === 0 && doc) {
+          this.consultarOnline(doc.tipo, doc.numero);
+        }
+      });
+  }
+
+  private consultarOnline(tipo: TipoDocumento, numero: string) {
+    this.api
+      .consultarCliente(tipo, numero)
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe({
+        next: (r) => this.consultaResult.set(r),
+        error: () => this.consultaResult.set(null),
+      });
   }
 
   selectCliente(c: ClienteResponse) {
     this.cliente.set(c);
+    this.clienteNuevo.set(null);
     this.clienteResults.set([]);
+    this.consultaResult.set(null);
+    this.clienteQ.set('');
+  }
+
+  selectClienteNuevo(r: ClienteConsultaResponse) {
+    this.clienteNuevo.set({
+      tipoDocumento: r.tipoDocumento,
+      numeroDocumento: r.numeroDocumento,
+      razonSocial: r.razonSocial,
+    });
+    this.clienteResults.set([]);
+    this.consultaResult.set(null);
     this.clienteQ.set('');
   }
 
   clearCliente() {
     this.cliente.set(null);
+    this.clienteNuevo.set(null);
+    this.consultaResult.set(null);
+  }
+
+  clearClienteNuevo() {
+    this.clienteNuevo.set(null);
+    this.consultaResult.set(null);
   }
 
   openClienteNuevo() {
@@ -1007,6 +1075,35 @@ export class VentasComponent implements OnInit {
       });
   }
 
+  consultarNuevo() {
+    const tipo = this.clienteForm.controls.tipoDocumento.value as TipoDocumento;
+    const numero = (this.clienteForm.controls.numeroDocumento.value || '').replace(/\D/g, '');
+    if (tipo !== 'DNI' && tipo !== 'RUC') {
+      this.toast.warning('Solo se puede consultar un DNI o RUC');
+      return;
+    }
+    const esperado = tipo === 'DNI' ? 8 : 11;
+    if (numero.length !== esperado) {
+      this.toast.warning(tipo === 'DNI' ? 'El DNI debe tener 8 dígitos' : 'El RUC debe tener 11 dígitos');
+      return;
+    }
+    this.buscandoNuevo.set(true);
+    this.api
+      .consultarCliente(tipo, numero)
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe({
+        next: (r) => {
+          this.buscandoNuevo.set(false);
+          this.clienteForm.patchValue({ razonSocial: r.razonSocial });
+          this.toast.success(r.local ? 'Cliente encontrado en tu base de datos' : 'Datos del documento cargados');
+        },
+        error: (e) => {
+          this.buscandoNuevo.set(false);
+          this.toast.error(errorMessage(e));
+        },
+      });
+  }
+
   cobrar() {
     if (this.cart().length === 0 || this.saving()) return;
     const s = this.sesion();
@@ -1014,11 +1111,12 @@ export class VentasComponent implements OnInit {
       this.toast.error('Debes abrir una caja primero');
       return;
     }
-    if (this.comprobante() === 'FACTURA' && !this.cliente()) {
+    if (this.comprobante() === 'FACTURA' && !this.cliente() && !(this.clienteNuevo()?.tipoDocumento === 'RUC')) {
       this.toast.warning('La factura requiere un cliente con RUC');
       return;
     }
     const c = this.cliente();
+    const cn = this.clienteNuevo();
     const pesoMal = this.cart().some((i) => i.ventaPorPeso && (i.pesoGramos ?? 0) / 1000 > i.stock);
     if (pesoMal) {
       this.toast.warning('El peso de un producto excede el stock disponible');
@@ -1034,6 +1132,11 @@ export class VentasComponent implements OnInit {
     this.ventaService
       .crear({
         clienteId: c?.id ?? null,
+        clienteNuevo: c
+          ? null
+          : cn
+            ? { tipoDocumento: cn.tipoDocumento, numeroDocumento: cn.numeroDocumento, razonSocial: cn.razonSocial }
+            : null,
         tipoPago: this.tipoPago(),
         tipoComprobante: this.comprobante(),
         descuento: this.descuento() || null,

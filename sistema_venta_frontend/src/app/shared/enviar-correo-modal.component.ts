@@ -1,7 +1,6 @@
 import { Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { boletaTexto } from '../core/boleta';
-import { ConfiguracionResponse, VentaResponse } from '../core/models';
+import { VentaResponse } from '../core/models';
 import { ApiService } from '../core/services/api.service';
 import { ToastService } from '../core/services/toast.service';
 import { errorMessage, tipoComprobanteLabel } from '../core/utils';
@@ -20,7 +19,7 @@ import { ModalComponent, ModalFooterDirective } from './modal.component';
       @if (venta(); as v) {
         <div class="em-body">
           <p class="muted mb-12">
-            Se enviará <b>{{ comprobante(v) }}</b> desde la cuenta configurada en <b>Configuración → Correo</b>.
+            Se enviará <b>{{ comprobante(v) }}</b> con la boleta adjunta en PDF (A4, formato SUNAT), desde la cuenta configurada en <b>Configuración → Correo</b>.
           </p>
           <div class="field mb-12">
             <label class="label">Para <span class="opt">obligatorio</span></label>
@@ -31,8 +30,8 @@ import { ModalComponent, ModalFooterDirective } from './modal.component';
             <input class="input" [value]="asunto(v)" readonly />
           </div>
           <div class="field">
-            <label class="label">Mensaje</label>
-            <textarea class="textarea" rows="8" [value]="cuerpo(v)" readonly></textarea>
+            <label class="label">Mensaje <span class="opt">opcional</span></label>
+            <textarea class="textarea" rows="5" [value]="mensaje()" (input)="mensaje.set($any($event.target).value)" placeholder="Nota adicional para el cliente (opcional)"></textarea>
           </div>
         </div>
       }
@@ -69,37 +68,15 @@ export class EnviarCorreoModalComponent {
 
   readonly sending = signal(false);
   readonly para = signal('');
-  private readonly negocio = signal<ConfiguracionResponse | null>(null);
+  readonly mensaje = signal('');
 
   constructor() {
-    this.api
-      .configuracion()
-      .pipe(takeUntilDestroyed(this.destroy))
-      .subscribe((c) => this.negocio.set(c));
-
     effect(() => {
       if (this.abierto()) {
         this.para.set(this.venta()?.clienteEmail ?? '');
+        this.mensaje.set('');
       }
     });
-  }
-
-  private negocioVal(): ConfiguracionResponse {
-    return (
-      this.negocio() ?? {
-        igvPorcentaje: 18,
-        precioIncluyeIGV: true,
-        razonSocial: '',
-        ruc: '',
-        direccion: '',
-        telefono: '',
-        email: '',
-        smtpHost: '',
-        smtpPort: '587',
-        smtpUsername: '',
-        smtpPassword: '',
-      }
-    );
   }
 
   comprobante(v: VentaResponse): string {
@@ -110,16 +87,12 @@ export class EnviarCorreoModalComponent {
     return `${tipoComprobanteLabel(v.tipoComprobante)} ${this.comprobante(v)}`;
   }
 
-  cuerpo(v: VentaResponse): string {
-    return boletaTexto(v, this.negocioVal());
-  }
-
   enviar(v: VentaResponse) {
     const para = this.para().trim();
     if (!para || this.sending()) return;
     this.sending.set(true);
     this.api
-      .enviarCorreo({ para, asunto: this.asunto(v), cuerpo: this.cuerpo(v) })
+      .enviarCorreo({ para, asunto: this.asunto(v), cuerpo: this.mensaje().trim() || null, ventaId: v.id })
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe({
         next: () => {
