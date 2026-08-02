@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="210" viewBox="0 0 1000 210" role="img" aria-label="Sistema de Ventas — Banner">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="55%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#134e4a"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <style>
+      @keyframes sweep { 0% { transform: translateX(-260px); } 100% { transform: translateX(1260px); } }
+      @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+      @keyframes pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.9; } }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      .sweep { animation: sweep 4.2s linear infinite; }
+      .floaty { animation: floaty 3s ease-in-out infinite; }
+      .pulse { animation: pulse 2.6s ease-in-out infinite; }
+      .spin { animation: spin 9s linear infinite; transform-origin: 136px 105px; }
+      .t-title { font: 800 56px 'Segoe UI', Arial, sans-serif; fill: #ffffff; }
+      .t-sub   { font: 500 22px 'Segoe UI', Arial, sans-serif; fill: #ccfbf1; }
+      .t-badge { font: 600 15px 'Segoe UI', Arial, sans-serif; fill: #134e4a; }
+    </style>
+  </defs>
+
+  <rect width="1000" height="210" rx="20" fill="url(#bg)"/>
+  <rect class="sweep" width="260" height="210" fill="url(#shine)"/>
+
+  <circle class="pulse" cx="58" cy="42" r="7" fill="#5eead4"/>
+  <circle class="pulse" cx="948" cy="158" r="9" fill="#99f6e4" style="animation-delay: .5s"/>
+  <circle cx="925" cy="38" r="4" fill="#5eead4" opacity=".5"/>
+  <circle cx="70" cy="168" r="5" fill="#99f6e4" opacity=".6"/>
+  <circle class="spin" cx="136" cy="105" r="38" fill="#ffffff" opacity=".06"/>
+
+  <text class="floaty" x="112" y="126" font-size="58">🛒</text>
+
+  <text class="t-title" x="232" y="98">Sistema de Ventas</text>
+  <text class="t-sub" x="234" y="132">Punto de venta completo para tu negocio 🏪</text>
+
+  <rect x="234" y="152" width="150" height="27" rx="14" fill="#ccfbf1"/>
+  <text class="t-badge" x="251" y="171">POS · PERÚ 🇵🇪</text>
+</svg>
